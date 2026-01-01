@@ -1,72 +1,95 @@
 import { useState } from 'react';
-import { Card, CardHeader, CardBody, Input, Button, Form } from "@heroui/react";
+import { LoginForm as ProLoginForm, ProFormText, ProFormCheckbox } from '@ant-design/pro-components';
 import { login } from '@/api/auth';
 import { useNavigate } from '@tanstack/react-router';
+import { UserOutlined, LockOutlined, LayoutOutlined } from '@ant-design/icons';
+import { message, theme } from 'antd';
 
 export const LoginForm = () => {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const { token } = theme.useToken();
     const navigate = useNavigate();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
+    // ProForm handles state internally, but we can also use formRef if needed
+    // The onFinish callback receives the values directly
+
+    const handleSubmit = async (values: any) => {
         try {
-            // Use existing login API
-            // Note: The API expects 'username' and 'password' in URLSearchParams usually for OAuth2, 
-            // but let's check the backend. The backend `UserLogin` schema expects JSON body.
-            // app/system/schemas/user.py: UserLogin (username, password)
-            // app/system/api/user.py: @router.post("/login") expects UserLogin as body.
-            // ui/src/api/auth.ts: login(data) posts data.
+            const res = await login({
+                username: values.username,
+                password: values.password
+            });
 
-            const res = await login({ username, password });
-
-            // Assuming res contains access_token based on backend verification
             if (res.code === 0 && res.data.access_token) {
                 localStorage.setItem('token', res.data.access_token);
+                message.success('Login successful!');
                 navigate({ to: '/' });
             } else {
-                alert('Login failed: ' + (res.msg || 'Unknown error'));
+                message.error('Login failed: ' + (res.msg || 'Unknown error'));
             }
         } catch (error) {
             console.error('Login error', error);
-            alert('Login error');
-        } finally {
-            setIsLoading(false);
+            message.error('Login error');
         }
     };
 
     return (
-        <Card className="w-full">
-            <CardHeader className="flex flex-col gap-1 items-center pb-4">
-                <h1 className="text-2xl font-bold">Login</h1>
-                <p className="text-small text-default-500">Enter your credentials to continue</p>
-            </CardHeader>
-            <CardBody>
-                <Form validationBehavior="native" onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <Input
-                        isRequired
-                        label="Username"
-                        placeholder="Enter your username"
-                        value={username}
-                        onValueChange={setUsername}
-                        variant="bordered"
-                    />
-                    <Input
-                        isRequired
-                        label="Password"
-                        placeholder="Enter your password"
-                        type="password"
-                        value={password}
-                        onValueChange={setPassword}
-                        variant="bordered"
-                    />
-                    <Button color="primary" type="submit" isLoading={isLoading} className="w-full">
-                        Sign In
-                    </Button>
-                </Form>
-            </CardBody>
-        </Card>
+        <div style={{ backgroundColor: 'white' }}>
+            <ProLoginForm
+                logo={<LayoutOutlined style={{ fontSize: 44, color: token.colorPrimary }} />}
+                title="FastAPI Admin"
+                subTitle="Best admin best practices"
+                onFinish={handleSubmit}
+                submitter={{
+                    searchConfig: {
+                        submitText: 'Sign In',
+                    },
+                }}
+            >
+                <ProFormText
+                    name="username"
+                    fieldProps={{
+                        size: 'large',
+                        prefix: <UserOutlined />,
+                    }}
+                    placeholder={'Username'}
+                    rules={[
+                        {
+                            required: true,
+                            message: 'Please enter your username!',
+                        },
+                    ]}
+                />
+                <ProFormText.Password
+                    name="password"
+                    fieldProps={{
+                        size: 'large',
+                        prefix: <LockOutlined />,
+                    }}
+                    placeholder={'Password'}
+                    rules={[
+                        {
+                            required: true,
+                            message: 'Please enter your password!',
+                        },
+                    ]}
+                />
+                <div
+                    style={{
+                        marginBottom: 24,
+                    }}
+                >
+                    <ProFormCheckbox noStyle name="autoLogin">
+                        Remember me
+                    </ProFormCheckbox>
+                    <a
+                        style={{
+                            float: 'right',
+                        }}
+                    >
+                        Forgot password
+                    </a>
+                </div>
+            </ProLoginForm>
+        </div>
     );
 };

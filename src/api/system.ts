@@ -11,6 +11,7 @@ export interface Menu {
     icon: string;
     sort: number;
     menu_type: number;
+    hidden?: boolean;
     children?: Menu[];
 }
 

@@ -1,6 +1,6 @@
 import { createRouter, createRoute, createRootRoute, Outlet, redirect } from '@tanstack/react-router';
 import { AuthLayout } from '@/layouts/AuthLayout';
-import { DashboardLayout } from '@/layouts/DashboardLayout';
+import MainLayout from '@/components/layout/MainLayout';
 import { Login } from '@/pages/Login';
 import { Dashboard } from '@/pages/Dashboard';
 
@@ -32,7 +32,7 @@ const loginRoute = createRoute({
 const dashboardRoute = createRoute({
     getParentRoute: () => rootRoute,
     id: 'dashboard',
-    component: DashboardLayout,
+    component: MainLayout,
     beforeLoad: ({ location }) => {
         if (!localStorage.getItem('token')) {
             throw redirect({
