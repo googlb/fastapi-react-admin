@@ -3,6 +3,11 @@ import { AuthLayout } from '@/layouts/AuthLayout';
 import MainLayout from '@/components/layout/MainLayout';
 import { Login } from '@/pages/Login';
 import { Dashboard } from '@/pages/Dashboard';
+import Users from '@/pages/Users';
+import Roles from '@/pages/Roles';
+import Menus from '@/pages/Menus';
+import Profile from '@/pages/Profile';
+import Settings from '@/pages/Settings';
 
 // Root route
 const rootRoute = createRootRoute({
@@ -52,9 +57,51 @@ const indexRoute = createRoute({
     component: Dashboard,
 });
 
+// Users Route
+const usersRoute = createRoute({
+    getParentRoute: () => dashboardRoute,
+    path: '/system/users',
+    component: Users,
+});
+
+// Roles Route
+const rolesRoute = createRoute({
+    getParentRoute: () => dashboardRoute,
+    path: '/system/roles',
+    component: Roles,
+});
+
+// Menus Route
+const menusRoute = createRoute({
+    getParentRoute: () => dashboardRoute,
+    path: '/system/menus',
+    component: Menus,
+});
+
+// Profile Route
+const profileRoute = createRoute({
+    getParentRoute: () => dashboardRoute,
+    path: '/profile',
+    component: Profile,
+});
+
+// Settings Route
+const settingsRoute = createRoute({
+    getParentRoute: () => dashboardRoute,
+    path: '/settings',
+    component: Settings,
+});
+
 const routeTree = rootRoute.addChildren([
     authRoute.addChildren([loginRoute]),
-    dashboardRoute.addChildren([indexRoute]),
+    dashboardRoute.addChildren([
+        indexRoute,
+        usersRoute,
+        rolesRoute,
+        menusRoute,
+        profileRoute,
+        settingsRoute,
+    ]),
 ]);
 
 export const router = createRouter({ routeTree });

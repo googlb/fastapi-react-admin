@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { LoginForm as ProLoginForm, ProFormText, ProFormCheckbox } from '@ant-design/pro-components';
 import { login } from '@/api/auth';
 import { useNavigate } from '@tanstack/react-router';
@@ -33,63 +32,55 @@ export const LoginForm = () => {
     };
 
     return (
-        <div style={{ backgroundColor: 'white' }}>
+        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full">
             <ProLoginForm
-                logo={<LayoutOutlined style={{ fontSize: 44, color: token.colorPrimary }} />}
-                title="FastAPI Admin"
-                subTitle="Best admin best practices"
-                onFinish={handleSubmit}
-                submitter={{
-                    searchConfig: {
-                        submitText: 'Sign In',
-                    },
-                }}
-            >
-                <ProFormText
-                    name="username"
-                    fieldProps={{
-                        size: 'large',
-                        prefix: <UserOutlined />,
-                    }}
-                    placeholder={'Username'}
-                    rules={[
-                        {
-                            required: true,
-                            message: 'Please enter your username!',
+                    logo={<LayoutOutlined className="text-5xl" style={{ color: token.colorPrimary }} />}
+                    title="FastAPI Admin"
+                    subTitle="Best admin best practices"
+                    onFinish={handleSubmit}
+                    submitter={{
+                        searchConfig: {
+                            submitText: 'Sign In',
                         },
-                    ]}
-                />
-                <ProFormText.Password
-                    name="password"
-                    fieldProps={{
-                        size: 'large',
-                        prefix: <LockOutlined />,
-                    }}
-                    placeholder={'Password'}
-                    rules={[
-                        {
-                            required: true,
-                            message: 'Please enter your password!',
-                        },
-                    ]}
-                />
-                <div
-                    style={{
-                        marginBottom: 24,
                     }}
                 >
-                    <ProFormCheckbox noStyle name="autoLogin">
-                        Remember me
-                    </ProFormCheckbox>
-                    <a
-                        style={{
-                            float: 'right',
+                    <ProFormText
+                        name="username"
+                        fieldProps={{
+                            size: 'large',
+                            prefix: <UserOutlined />,
                         }}
-                    >
-                        Forgot password
-                    </a>
-                </div>
-            </ProLoginForm>
+                        placeholder={'Username'}
+                        rules={[
+                            {
+                                required: true,
+                                message: 'Please enter your username!',
+                            },
+                        ]}
+                    />
+                    <ProFormText.Password
+                        name="password"
+                        fieldProps={{
+                            size: 'large',
+                            prefix: <LockOutlined />,
+                        }}
+                        placeholder={'Password'}
+                        rules={[
+                            {
+                                required: true,
+                                message: 'Please enter your password!',
+                            },
+                        ]}
+                    />
+                    <div className="mb-6">
+                        <ProFormCheckbox noStyle name="autoLogin">
+                            Remember me
+                        </ProFormCheckbox>
+                        <a className="float-right text-blue-600 hover:text-blue-700">
+                            Forgot password
+                        </a>
+                    </div>
+                </ProLoginForm>
         </div>
     );
 };

@@ -1,12 +1,18 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { login, getUserInfo } from '@/api/auth';
+import { SUCCESS_CODE } from '@/types/api';
+
+interface LoginCredentials {
+    username: string;
+    password: string;
+}
 
 interface AuthState {
     token: string | null;
     user: any | null;
     isAuthenticated: boolean;
-    login: (credentials: any) => Promise<void>;
+    login: (credentials: LoginCredentials) => Promise<void>;
     logout: () => void;
     fetchUser: () => Promise<void>;
 }
@@ -20,14 +26,14 @@ export const useAuthStore = create<AuthState>()(
 
             login: async (credentials) => {
                 const res: any = await login(credentials);
-                if (res.code === 200) {
+                if (res.code === SUCCESS_CODE) {
                     const { access_token } = res.data;
                     set({ token: access_token, isAuthenticated: true });
 
                     // After login, fetch user info
                     await get().fetchUser();
                 } else {
-                    throw new Error(res.message || 'Login failed');
+                    throw new Error(res.msg || 'Login failed');
                 }
             },
 
@@ -39,7 +45,7 @@ export const useAuthStore = create<AuthState>()(
             fetchUser: async () => {
                 try {
                     const res: any = await getUserInfo();
-                    if (res.code === 200) {
+                    if (res.code === SUCCESS_CODE) {
                         set({ user: res.data });
                     }
                 } catch (error) {

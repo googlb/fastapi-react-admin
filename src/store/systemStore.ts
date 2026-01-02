@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { type Menu, getMyMenus } from '@/api/system';
+import { SUCCESS_CODE } from '@/types/api';
 
 interface Tab {
-    title: string;
-    path: string;
+    key: string;
+    label: string;
     closable: boolean;
 }
 
@@ -18,19 +19,21 @@ interface SystemState {
     addTab: (tab: Tab) => void;
     removeTab: (path: string) => void;
     setActiveTab: (path: string) => void;
+    clearAllTabs: () => void;
+    clearOtherTabs: (exceptPath: string) => void;
 }
 
 export const useSystemStore = create<SystemState>((set, get) => ({
     menus: [],
     isSidebarCollapsed: false,
-    tabs: [{ title: 'Dashboard', path: '/', closable: false }],
+    tabs: [{ key: '/', label: 'Dashboard', closable: false }],
     activeTabPath: '/',
 
     fetchMenus: async () => {
         try {
             const res = await getMyMenus();
-            if (res.code === 200) {
-                set({ menus: res.data });
+            if (res.code === SUCCESS_CODE) {
+                set({ menus: res.data || [] });
             }
         } catch (error) {
             console.error('Failed to fetch menus', error);
@@ -41,24 +44,37 @@ export const useSystemStore = create<SystemState>((set, get) => ({
 
     addTab: (tab) => {
         const { tabs } = get();
-        if (!tabs.find((t) => t.path === tab.path)) {
-            set({ tabs: [...tabs, tab], activeTabPath: tab.path });
+        if (!tabs.find((t) => t.key === tab.key)) {
+            set({ tabs: [...tabs, tab], activeTabPath: tab.key });
         } else {
-            set({ activeTabPath: tab.path });
+            set({ activeTabPath: tab.key });
         }
     },
 
     removeTab: (path) => {
         const { tabs, activeTabPath } = get();
-        const newTabs = tabs.filter((t) => t.path !== path);
+        const newTabs = tabs.filter((t) => t.key !== path);
 
         let newActivePath = activeTabPath;
         if (activeTabPath === path) {
-            newActivePath = newTabs[newTabs.length - 1]?.path || '/';
+            newActivePath = newTabs[newTabs.length - 1]?.key || '/';
         }
 
         set({ tabs: newTabs, activeTabPath: newActivePath });
     },
 
     setActiveTab: (path) => set({ activeTabPath: path }),
+
+    clearAllTabs: () => {
+        set({
+            tabs: [{ key: '/', label: 'Dashboard', closable: false }],
+            activeTabPath: '/',
+        });
+    },
+
+    clearOtherTabs: (exceptPath) => {
+        const { tabs } = get();
+        const newTabs = tabs.filter((t) => t.key === exceptPath || t.key === '/');
+        set({ tabs: newTabs });
+    },
 }));
