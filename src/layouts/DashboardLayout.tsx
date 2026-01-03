@@ -85,10 +85,7 @@ const DashboardLayout: React.FC = () => {
       <Sidebar collapsed={collapsed} />
 
       {/* 主内容区域 */}
-      <Layout
-        className="transition-all duration-200"
-        style={{ marginLeft: collapsed ? 80 : 256 }}
-      >
+      <Layout className={`transition-all duration-200 ${collapsed ? 'ml-20' : 'ml-64'}`}>
         {/* 顶部栏 */}
         <Header
           collapsed={collapsed}
@@ -100,8 +97,8 @@ const DashboardLayout: React.FC = () => {
         <TabBar />
 
         {/* 内容区 */}
-        <Content className="m-0 p-6 bg-gray-50">
-          <div className="bg-white rounded-lg shadow-sm p-6 min-h-[calc(100vh-64px-48px-48px)]">
+        <Content className="p-6 bg-gray-50 min-h-[calc(100vh-64px-49px)]">
+          <div className="bg-white rounded-lg shadow-sm p-6">
             <Outlet />
           </div>
         </Content>

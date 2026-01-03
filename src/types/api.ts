@@ -48,6 +48,7 @@ export interface Menu {
     menu_type: number; // 1:目录 2:菜单 3:按钮
     is_visible: boolean;
     is_keep_alive: boolean;
+    permission?: string | null;
     status: number; // 1:启用 0:禁用
     created_at: string; // ISO 8601 格式
     updated_at: string; // ISO 8601 格式

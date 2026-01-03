@@ -53,10 +53,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
       className="fixed left-0 top-0 bottom-0 z-10 h-screen overflow-auto"
     >
       {/* Logo */}
-      <div className="h-16 flex items-center justify-center text-white font-bold border-b border-white/10">
-        <span className={collapsed ? 'text-xl' : 'text-2xl'}>
-          {collapsed ? 'FP' : 'FastAPI Admin'}
-        </span>
+      <div className={`h-16 flex items-center justify-center text-white font-bold border-b border-white/10 ${collapsed ? 'text-xl' : 'text-2xl'}`}>
+        {collapsed ? 'FP' : 'FastAPI Admin'}
       </div>
 
       {/* Menu */}

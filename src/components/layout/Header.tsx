@@ -54,44 +54,43 @@ const Header: React.FC<HeaderProps> = ({ collapsed, onToggleCollapse, breadcrumb
 
   return (
     <AntHeader
-      className="flex items-center justify-between bg-white px-6 shadow-sm border-b border-gray-200"
       style={{
-        padding: '0 24px 0 10px',
+        padding: '0 24px',
         height: 64,
         lineHeight: '64px',
-        backgroundColor: '#fff'
+        backgroundColor: '#fff',
+        borderBottom: '1px solid #f0f0f0',
       }}
     >
-      {/* Left: Toggle button + Breadcrumb */}
-      <div className="flex items-center gap-4">
-        <Button
-          type="text"
-          icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          onClick={onToggleCollapse}
-          className="text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-          style={{
-            fontSize: 16,
-            width: 40,
-            height: 40,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        />
-        <Breadcrumb items={breadcrumbItems} />
-      </div>
-
-      {/* Right: User dropdown */}
-      <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-        <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
-          <Avatar
-            size="default"
-            src={user?.avatar || undefined}
-            icon={<UserOutlined />}
+      <div className="flex items-center justify-between h-full">
+        {/* Left: Toggle button + Breadcrumb */}
+        <div className="flex items-center gap-4">
+          <Button
+            type="text"
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={onToggleCollapse}
+            className="text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+            style={{
+              fontSize: 16,
+              width: 40,
+              height: 40,
+            }}
           />
-          <span className="text-sm">{user?.username || 'Admin'}</span>
+          <Breadcrumb items={breadcrumbItems} />
         </div>
-      </Dropdown>
+
+        {/* Right: User dropdown */}
+        <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+          <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
+            <Avatar
+              size="default"
+              src={user?.avatar || undefined}
+              icon={<UserOutlined />}
+            />
+            <span className="text-sm text-gray-700">{user?.username || 'Admin'}</span>
+          </div>
+        </Dropdown>
+      </div>
     </AntHeader>
   );
 };

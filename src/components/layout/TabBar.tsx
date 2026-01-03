@@ -1,5 +1,12 @@
 import React, { useEffect } from 'react';
-import { Tabs } from 'antd';
+import { Tabs, Dropdown } from 'antd';
+import type { MenuProps } from 'antd';
+import {
+  CloseOutlined,
+  CloseCircleOutlined,
+  ColumnWidthOutlined,
+  MoreOutlined
+} from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTabsStore } from '@/store/tabsStore';
 import { useSystemStore } from '@/store/systemStore';
@@ -20,7 +27,7 @@ const findMenuTitle = (menus: Menu[], path: string): string | undefined => {
 const TabBar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { tabs, activeTabKey, addTab, removeTab, setActiveTab } = useTabsStore();
+  const { tabs, activeTabKey, addTab, removeTab, setActiveTab, clearTabs } = useTabsStore();
   const { menus } = useSystemStore();
 
   // 监听路由变化，自动添加/激活标签
@@ -81,6 +88,87 @@ const TabBar: React.FC = () => {
     }
   };
 
+  // 关闭其他标签
+  const handleCloseOthers = () => {
+    const currentTab = tabs.find(tab => tab.key === activeTabKey);
+    const homeTab = tabs.find(tab => tab.key === '/');
+
+    // 只保留首页和当前标签
+    const keepTabs = [homeTab, currentTab].filter(Boolean);
+
+    // 清除所有标签，然后重新添加
+    clearTabs();
+    keepTabs.forEach(tab => {
+      if (tab) addTab(tab);
+    });
+  };
+
+  // 关闭右侧标签
+  const handleCloseRight = () => {
+    const currentIndex = tabs.findIndex(tab => tab.key === activeTabKey);
+    const rightTabs = tabs.slice(currentIndex + 1);
+
+    rightTabs.forEach(tab => {
+      if (tab.closable) {
+        removeTab(tab.key);
+      }
+    });
+  };
+
+  // 关闭左侧标签（保留首页）
+  const handleCloseLeft = () => {
+    const currentIndex = tabs.findIndex(tab => tab.key === activeTabKey);
+    const leftTabs = tabs.slice(1, currentIndex); // 从索引1开始，跳过首页
+
+    leftTabs.forEach(tab => {
+      if (tab.closable) {
+        removeTab(tab.key);
+      }
+    });
+  };
+
+  // 关闭所有标签（保留首页）
+  const handleCloseAll = () => {
+    clearTabs();
+    setActiveTab('/');
+    navigate('/');
+  };
+
+  // 操作菜单
+  const operationMenuItems: MenuProps['items'] = [
+    {
+      key: 'close-others',
+      icon: <CloseCircleOutlined />,
+      label: '关闭其他',
+      onClick: handleCloseOthers,
+      disabled: tabs.filter(t => t.closable).length <= 1,
+    },
+    {
+      key: 'close-right',
+      icon: <ColumnWidthOutlined />,
+      label: '关闭右侧',
+      onClick: handleCloseRight,
+      disabled: tabs.findIndex(t => t.key === activeTabKey) >= tabs.length - 1,
+    },
+    {
+      key: 'close-left',
+      icon: <ColumnWidthOutlined className="scale-x-[-1]" />,
+      label: '关闭左侧',
+      onClick: handleCloseLeft,
+      disabled: tabs.findIndex(t => t.key === activeTabKey) <= 1,
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'close-all',
+      icon: <CloseOutlined />,
+      label: '关闭所有',
+      onClick: handleCloseAll,
+      disabled: tabs.filter(t => t.closable).length === 0,
+    },
+  ];
+
   // 转换为 Ant Design Tabs 格式
   const items = tabs.map(tab => ({
     key: tab.key,
@@ -89,18 +177,29 @@ const TabBar: React.FC = () => {
   }));
 
   return (
-    <div className="bg-white border-b border-gray-200">
-      <Tabs
-        type="editable-card"
-        hideAdd
-        activeKey={activeTabKey}
-        onChange={handleTabChange}
-        onEdit={handleTabEdit}
-        items={items}
-        size="small"
-        className="w-full"
-        tabBarStyle={{ margin: 0, border: 'none', paddingLeft: 12 }}
-      />
+    <div className="bg-white border-b border-gray-200 flex items-stretch pt-2">
+      <div className="flex-1 overflow-hidden">
+        <Tabs
+          type="editable-card"
+          hideAdd
+          activeKey={activeTabKey}
+          onChange={handleTabChange}
+          onEdit={handleTabEdit}
+          items={items}
+          size="small"
+          className="w-full [&_.ant-tabs-nav]:!mb-0 [&_.ant-tabs-nav]:!border-0 [&_.ant-tabs-nav]:pl-3"
+          tabBarGutter={4}
+        />
+      </div>
+
+      {/* 操作按钮 */}
+      <div className="flex-shrink-0 px-2 border-l border-gray-200 flex items-center">
+        <Dropdown menu={{ items: operationMenuItems }} placement="bottomRight">
+          <div className="cursor-pointer px-3 py-1 hover:bg-gray-100 rounded transition-colors">
+            <MoreOutlined className="text-base" />
+          </div>
+        </Dropdown>
+      </div>
     </div>
   );
 };

@@ -13,6 +13,9 @@ const Menus = lazy(() => import('@/pages/system/Menus'));
 const Profile = lazy(() => import('@/pages/user/Profile'));
 const Settings = lazy(() => import('@/pages/user/Settings'));
 
+// 通用占位页面
+const PlaceholderPage = lazy(() => import('@/pages/PlaceholderPage'));
+
 // Loading 组件
 const PageLoading: React.FC = () => (
   <div className="flex items-center justify-center min-h-[400px]">
@@ -78,6 +81,7 @@ const router = createBrowserRouter([
           </Suspense>
         ),
       },
+      // 系统管理
       {
         path: 'system/users',
         element: (
@@ -103,6 +107,42 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'system/:page',
+        element: (
+          <Suspense fallback={<PageLoading />}>
+            <PlaceholderPage />
+          </Suspense>
+        ),
+      },
+      // 内容管理
+      {
+        path: 'content/:page',
+        element: (
+          <Suspense fallback={<PageLoading />}>
+            <PlaceholderPage />
+          </Suspense>
+        ),
+      },
+      // 监控管理
+      {
+        path: 'monitor/:page',
+        element: (
+          <Suspense fallback={<PageLoading />}>
+            <PlaceholderPage />
+          </Suspense>
+        ),
+      },
+      // 工具管理
+      {
+        path: 'tools/:page',
+        element: (
+          <Suspense fallback={<PageLoading />}>
+            <PlaceholderPage />
+          </Suspense>
+        ),
+      },
+      // 用户中心
+      {
         path: 'user/profile',
         element: (
           <Suspense fallback={<PageLoading />}>
@@ -115,6 +155,15 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoading />}>
             <Settings />
+          </Suspense>
+        ),
+      },
+      // 通配符路由 - 捕获所有其他路径
+      {
+        path: '*',
+        element: (
+          <Suspense fallback={<PageLoading />}>
+            <PlaceholderPage />
           </Suspense>
         ),
       },
