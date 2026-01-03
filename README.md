@@ -1,10 +1,10 @@
 # FastAPI React Admin
 
-基于 FastAPI + React + TanStack Router + Ant Design 的后台管理系统模板。
+基于 FastAPI + React + React Router DOM + Ant Design 的后台管理系统模板。
 
 ## 项目特性
 
-- ⚡ **TanStack Router v1** - File-Based Routing 架构
+- ⚡ **React Router DOM** - 传统路由架构
 - 🎨 **Ant Design** - 企业级 UI 组件库
 - 🔐 **认证鉴权** - 基于路由守卫的权限控制
 - 📦 **代码分割** - 自动懒加载优化性能
@@ -18,8 +18,7 @@
 - React 19
 - TypeScript 5
 - Vite 7
-- TanStack Router 1
-- TanStack Query 5
+- React Router DOM
 - Ant Design 6
 - Zustand 5
 - Zod 4
@@ -29,11 +28,30 @@
 ```
 ui/
 ├── src/
-│   ├── routes/              # TanStack Router 文件系统路由
+│   ├── router/              # React Router 配置
+│   │   └── router.tsx       # 路由配置文件
 │   ├── pages/               # 页面组件
+│   │   ├── auth/            # 认证相关页面
+│   │   ├── system/          # 系统管理页面
+│   │   │   ├── Users.tsx    # 用户管理
+│   │   │   ├── Roles.tsx    # 角色管理
+│   │   │   └── Menus.tsx    # 菜单管理
+│   │   └── user/            # 用户中心页面
+│   │       ├── Profile.tsx  # 个人资料
+│   │       └── Settings.tsx # 设置页面
+│   ├── layouts/             # 布局组件
+│   │   ├── AuthLayout.tsx   # 认证布局
+│   │   └── DashboardLayout.tsx # 仪表板布局
 │   ├── components/          # 可复用组件
+│   │   └── layout/          # 布局相关组件
 │   ├── store/              # 状态管理 (Zustand)
 │   ├── api/                # API 接口定义
+│   │   ├── auth.ts         # 认证相关API
+│   │   └── system/         # 系统模块API
+│   │       ├── menu.ts     # 菜单API
+│   │       ├── role.ts     # 角色API
+│   │       ├── user.ts     # 用户API
+│   │       └── dict.ts     # 字典API
 │   ├── utils/              # 工具函数
 │   └── types/              # TypeScript 类型定义
 ├── docs/                  # 项目文档
@@ -52,9 +70,6 @@ pnpm install
 # 启动开发服务器
 pnpm dev
 
-# 生成路由树
-pnpm gen:route
-
 # 构建
 pnpm build
 
@@ -65,23 +80,30 @@ pnpm preview
 pnpm lint
 ```
 
-## 核心文档
-
-- [File-Based Routing 指南](docs/FILE_BASED_ROUTING.md) - 详细的路由架构说明
-- [布局组件指南](docs/LAYOUT_GUIDE.md) - 布局系统的实现说明
-- [页面重构文档](docs/PAGES_REFACTOR.md) - 页面模块化组织说明
-
 ## 路由系统
 
-项目使用 TanStack Router 的 File-Based Routing 架构：
+项目使用 React Router DOM 的配置式路由架构：
 
-- ✅ 自动路由生成 - 基于文件系统自动生成路由
 - ✅ 路由守卫 - 统一的认证和权限控制
 - ✅ 懒加载 - 自动代码分割，优化首屏加载
 - ✅ 类型安全 - 完整的 TypeScript 类型支持
-- ✅ 查询参数验证 - 使用 Zod 验证 URL 参数
+- ✅ 嵌套路由 - 支持布局嵌套和路由分组
+
+路由结构包括：
+- **认证路由**：登录等公共页面
+- **仪表板路由**：需要认证的页面
+- **系统管理路由**：用户、角色、菜单管理
+- **用户中心路由**：个人资料、设置等
 
 详细文档请查看 [File-Based Routing 指南](docs/FILE_BASED_ROUTING.md)。
+
+## 布局系统
+
+项目采用分层布局结构：
+
+- **AuthLayout**：用于登录等认证页面
+- **DashboardLayout**：用于仪表板和系统管理页面，包含侧边栏导航
+- **组件化结构**：可复用的头部、侧边栏和标签页组件
 
 ## API 接口
 
@@ -99,12 +121,20 @@ server: {
 }
 ```
 
+API 按模块组织：
+- **auth.ts**：认证相关接口
+- **system/**：系统管理相关接口
+  - **menu.ts**：菜单管理
+  - **role.ts**：角色管理
+  - **user.ts**：用户管理
+  - **dict.ts**：字典管理
+
 ## 认证与权限
 
 - 使用 Zustand persist 中间件持久化 Token
-- 路由级别的认证守卫（`_auth.tsx`）
-- 通过 Router Context 注入认证状态
-- 支持角色和权限控制
+- 路由级别的认证守卫（`ProtectedRoute` 和 `PublicRoute`）
+- 通过本地存储管理认证状态
+- 支持路由重定向和权限控制
 
 ## License
 
@@ -114,63 +144,3 @@ MIT
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
