@@ -1,13 +1,7 @@
 import { createRouter, createRoute, createRootRoute, Outlet, redirect } from '@tanstack/react-router';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import MainLayout from '@/components/layout/MainLayout';
-import { Login } from '@/pages/Login';
-import { Dashboard } from '@/pages/Dashboard';
-import Users from '@/pages/Users';
-import Roles from '@/pages/Roles';
-import Menus from '@/pages/Menus';
-import Profile from '@/pages/Profile';
-import Settings from '@/pages/Settings';
+import { Login, Dashboard, Users, Roles, Menus, Profile, Settings } from '@/pages';
 
 // Root route
 const rootRoute = createRootRoute({

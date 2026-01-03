@@ -1,6 +1,6 @@
 import { LoginForm } from '@/components/LoginForm';
 
-export const Login = () => {
+const Login = () => {
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden p-4">
             {/* Decorative background elements */}
@@ -14,3 +14,5 @@ export const Login = () => {
         </div>
     );
 };
+
+export default Login;

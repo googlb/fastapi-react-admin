@@ -5,7 +5,7 @@ import { getUserInfo } from '@/api/auth';
 
 const { Title } = Typography;
 
-export const Dashboard = () => {
+const Dashboard = () => {
     const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
@@ -48,3 +48,5 @@ export const Dashboard = () => {
         </div>
     );
 };
+
+export default Dashboard;
