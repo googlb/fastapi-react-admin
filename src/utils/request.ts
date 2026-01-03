@@ -3,7 +3,7 @@ import { message } from 'antd';
 import { SUCCESS_CODE } from '@/types/api';
 
 const service = axios.create({
-    baseURL: '/api/v1', // Matches backend prefix
+    baseURL: import.meta.env.VITE_API_PREFIX,
     timeout: 5000,
 });
 
