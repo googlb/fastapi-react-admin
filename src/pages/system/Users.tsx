@@ -21,12 +21,22 @@ const Users = () => {
             key: 'email',
         },
         {
-            title: 'Status',
-            dataIndex: 'status',
-            key: 'status',
-            render: (status: string) => (
-                <Tag color={status === 'active' ? 'green' : 'red'}>
-                    {status}
+            title: 'Is Active',
+            dataIndex: 'is_active',
+            key: 'is_active',
+            render: (is_active: boolean) => (
+                <Tag color={is_active ? 'green' : 'red'}>
+                    {is_active ? 'Active' : 'Inactive'}
+                </Tag>
+            ),
+        },
+        {
+            title: 'Is Superuser',
+            dataIndex: 'is_superuser',
+            key: 'is_superuser',
+            render: (is_superuser: boolean) => (
+                <Tag color={is_superuser ? 'blue' : 'default'}>
+                    {is_superuser ? 'Yes' : 'No'}
                 </Tag>
             ),
         },
@@ -57,7 +67,8 @@ const Users = () => {
             id: 1,
             username: 'admin',
             email: 'admin@example.com',
-            status: 'active',
+            is_active: true,
+            is_superuser: true,
             created_at: '2024-01-01',
         },
         {
@@ -65,7 +76,8 @@ const Users = () => {
             id: 2,
             username: 'user1',
             email: 'user1@example.com',
-            status: 'active',
+            is_active: true,
+            is_superuser: false,
             created_at: '2024-01-02',
         },
         {
@@ -73,7 +85,8 @@ const Users = () => {
             id: 3,
             username: 'user2',
             email: 'user2@example.com',
-            status: 'inactive',
+            is_active: false,
+            is_superuser: false,
             created_at: '2024-01-03',
         },
     ];
@@ -91,10 +104,8 @@ const Users = () => {
             <Table
                 columns={columns}
                 dataSource={data}
+                rowKey="id"
                 pagination={{
-                    current: 1,
-                    pageSize: 10,
-                    total: 3,
                     showSizeChanger: true,
                     showQuickJumper: true,
                     showTotal: (total) => `Total ${total} items`,

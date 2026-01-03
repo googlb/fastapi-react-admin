@@ -1,107 +1,134 @@
-import { createRouter, createRoute, createRootRoute, Outlet, redirect } from '@tanstack/react-router';
+import React, { lazy, Suspense } from 'react';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
+import { Spin } from 'antd';
 import { AuthLayout } from '@/layouts/AuthLayout';
-import MainLayout from '@/components/layout/MainLayout';
-import { Login, Dashboard, Users, Roles, Menus, Profile, Settings } from '@/pages';
+import DashboardLayout from '@/layouts/DashboardLayout';
 
-// Root route
-const rootRoute = createRootRoute({
-    component: Outlet,
-});
+// 懒加载组件
+const Login = lazy(() => import('@/pages/Login'));
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const Users = lazy(() => import('@/pages/system/Users'));
+const Roles = lazy(() => import('@/pages/system/Roles'));
+const Menus = lazy(() => import('@/pages/system/Menus'));
+const Profile = lazy(() => import('@/pages/user/Profile'));
+const Settings = lazy(() => import('@/pages/user/Settings'));
 
-// Auth Layout Route
-const authRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    id: 'auth',
-    component: AuthLayout,
-});
+// Loading 组件
+const PageLoading: React.FC = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <Spin size="large" tip="加载中..." />
+  </div>
+);
 
-// Login Route
-const loginRoute = createRoute({
-    getParentRoute: () => authRoute,
-    path: 'login',
-    component: Login,
-    beforeLoad: () => {
-        if (localStorage.getItem('token')) {
-            throw redirect({ to: '/' });
-        }
-    }
-});
+// 路由守卫：保护需要登录的路由
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const token = localStorage.getItem('access_token');
 
-// Dashboard Layout Route (Protected)
-const dashboardRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    id: 'dashboard',
-    component: MainLayout,
-    beforeLoad: ({ location }) => {
-        if (!localStorage.getItem('token')) {
-            throw redirect({
-                to: '/login',
-                search: {
-                    redirect: location.href,
-                },
-            });
-        }
-    },
-});
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
 
-// Dashboard Index Route
-const indexRoute = createRoute({
-    getParentRoute: () => dashboardRoute,
+  return <>{children}</>;
+};
+
+// 路由守卫：已登录用户重定向
+const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const token = localStorage.getItem('access_token');
+
+  if (token) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// 路由配置
+const router = createBrowserRouter([
+  {
+    path: '/login',
+    element: (
+      <PublicRoute>
+        <AuthLayout />
+      </PublicRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: (
+          <Suspense fallback={<PageLoading />}>
+            <Login />
+          </Suspense>
+        ),
+      },
+    ],
+  },
+  {
     path: '/',
-    component: Dashboard,
-});
-
-// Users Route
-const usersRoute = createRoute({
-    getParentRoute: () => dashboardRoute,
-    path: '/system/users',
-    component: Users,
-});
-
-// Roles Route
-const rolesRoute = createRoute({
-    getParentRoute: () => dashboardRoute,
-    path: '/system/roles',
-    component: Roles,
-});
-
-// Menus Route
-const menusRoute = createRoute({
-    getParentRoute: () => dashboardRoute,
-    path: '/system/menus',
-    component: Menus,
-});
-
-// Profile Route
-const profileRoute = createRoute({
-    getParentRoute: () => dashboardRoute,
-    path: '/profile',
-    component: Profile,
-});
-
-// Settings Route
-const settingsRoute = createRoute({
-    getParentRoute: () => dashboardRoute,
-    path: '/settings',
-    component: Settings,
-});
-
-const routeTree = rootRoute.addChildren([
-    authRoute.addChildren([loginRoute]),
-    dashboardRoute.addChildren([
-        indexRoute,
-        usersRoute,
-        rolesRoute,
-        menusRoute,
-        profileRoute,
-        settingsRoute,
-    ]),
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout />
+      </ProtectedRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: (
+          <Suspense fallback={<PageLoading />}>
+            <Dashboard />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'system/users',
+        element: (
+          <Suspense fallback={<PageLoading />}>
+            <Users />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'system/roles',
+        element: (
+          <Suspense fallback={<PageLoading />}>
+            <Roles />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'system/menus',
+        element: (
+          <Suspense fallback={<PageLoading />}>
+            <Menus />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'user/profile',
+        element: (
+          <Suspense fallback={<PageLoading />}>
+            <Profile />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'user/settings',
+        element: (
+          <Suspense fallback={<PageLoading />}>
+            <Settings />
+          </Suspense>
+        ),
+      },
+    ],
+  },
+  {
+    path: '*',
+    element: <Navigate to="/" replace />,
+  },
 ]);
 
-export const router = createRouter({ routeTree });
+// 导出 Router 组件
+export const Router: React.FC = () => {
+  return <RouterProvider router={router} />;
+};
 
-declare module '@tanstack/react-router' {
-    interface Register {
-        router: typeof router;
-    }
-}
+export default router;

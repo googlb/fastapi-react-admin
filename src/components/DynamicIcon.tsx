@@ -1,19 +1,29 @@
 import React, { memo } from 'react';
-import * as Icons from 'lucide-react';
-import type { LucideProps } from 'lucide-react';
+import * as Icons from '@ant-design/icons';
 
-interface DynamicIconProps extends LucideProps {
-    name: string;
+interface DynamicIconProps {
+  type: string;
+  className?: string;
+  style?: React.CSSProperties;
+  onClick?: () => void;
 }
 
-const DynamicIcon: React.FC<DynamicIconProps> = memo(({ name, ...props }) => {
-    const IconComponent = (Icons as any)[name];
+/**
+ * 动态渲染 Ant Design 图标组件
+ * @param type - 图标名称，例如 "UserOutlined", "HomeOutlined"
+ */
+const DynamicIcon: React.FC<DynamicIconProps> = memo(({ type, ...props }) => {
+  // 从 @ant-design/icons 中动态获取图标组件
+  const IconComponent = (Icons as any)[type];
 
-    if (!IconComponent) {
-        return <Icons.CircleHelp {...props} />;
-    }
+  // 如果找不到对应图标，返回默认图标
+  if (!IconComponent) {
+    return <Icons.QuestionCircleOutlined {...props} />;
+  }
 
-    return <IconComponent {...props} />;
+  return <IconComponent {...props} />;
 });
+
+DynamicIcon.displayName = 'DynamicIcon';
 
 export default DynamicIcon;

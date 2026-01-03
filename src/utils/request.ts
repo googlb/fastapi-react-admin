@@ -10,7 +10,7 @@ const service = axios.create({
 // Request interceptor
 service.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('access_token'); // 使用新的token存储键名
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -26,7 +26,7 @@ service.interceptors.response.use(
     (response) => {
         const res = response.data;
 
-        // Backend returns { code: 0, msg: "success", data: ... }
+        // Backend returns { code: 0, msg: "success", data: ..., is_success: boolean }
         if (res.code !== undefined && res.code !== SUCCESS_CODE) {
             message.error(res.msg || 'Request failed');
             return Promise.reject(new Error(res.msg || 'Request failed'));
@@ -42,7 +42,8 @@ service.interceptors.response.use(
             switch (status) {
                 case 401:
                     message.error('Unauthorized, please login again');
-                    localStorage.removeItem('token');
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
                     window.location.href = '/login';
                     break;
                 case 403:

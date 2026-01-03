@@ -1,4 +1,3 @@
-import React from 'react';
 
 const Settings = () => {
     return (
@@ -9,6 +8,5 @@ const Settings = () => {
     );
 };
 
-export default Settings;
 
 export default Settings;

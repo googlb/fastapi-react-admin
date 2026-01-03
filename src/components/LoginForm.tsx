@@ -1,86 +1,78 @@
 import { LoginForm as ProLoginForm, ProFormText, ProFormCheckbox } from '@ant-design/pro-components';
-import { login } from '@/api/auth';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate } from 'react-router-dom';
 import { UserOutlined, LockOutlined, LayoutOutlined } from '@ant-design/icons';
 import { message, theme } from 'antd';
+import { useAuthStore } from '@/store/authStore';
 
 export const LoginForm = () => {
     const { token } = theme.useToken();
     const navigate = useNavigate();
-
-    // ProForm handles state internally, but we can also use formRef if needed
-    // The onFinish callback receives the values directly
+    const { login } = useAuthStore();
 
     const handleSubmit = async (values: any) => {
         try {
-            const res = await login({
+            await login({
                 username: values.username,
                 password: values.password
             });
-
-            if (res.code === 0 && res.data.access_token) {
-                localStorage.setItem('token', res.data.access_token);
-                message.success('Login successful!');
-                navigate({ to: '/' });
-            } else {
-                message.error('Login failed: ' + (res.msg || 'Unknown error'));
-            }
-        } catch (error) {
+            message.success('登录成功！');
+            navigate('/');
+        } catch (error: any) {
             console.error('Login error', error);
-            message.error('Login error');
+            message.error(error.message || '登录失败，请重试');
         }
     };
 
     return (
         <div className="bg-white rounded-2xl shadow-2xl p-8 w-full">
             <ProLoginForm
-                    logo={<LayoutOutlined className="text-5xl" style={{ color: token.colorPrimary }} />}
-                    title="FastAPI Admin"
-                    subTitle="Best admin best practices"
-                    onFinish={handleSubmit}
-                    submitter={{
-                        searchConfig: {
-                            submitText: 'Sign In',
-                        },
+                logo={<LayoutOutlined className="text-5xl" style={{ color: token.colorPrimary }} />}
+                title="FastAPI Admin"
+                subTitle="现代化后台管理系统"
+                onFinish={handleSubmit}
+                submitter={{
+                    searchConfig: {
+                        submitText: '登录',
+                    },
+                }}
+            >
+                <ProFormText
+                    name="username"
+                    fieldProps={{
+                        size: 'large',
+                        prefix: <UserOutlined />,
                     }}
-                >
-                    <ProFormText
-                        name="username"
-                        fieldProps={{
-                            size: 'large',
-                            prefix: <UserOutlined />,
-                        }}
-                        placeholder={'Username'}
-                        rules={[
-                            {
-                                required: true,
-                                message: 'Please enter your username!',
-                            },
-                        ]}
-                    />
-                    <ProFormText.Password
-                        name="password"
-                        fieldProps={{
-                            size: 'large',
-                            prefix: <LockOutlined />,
-                        }}
-                        placeholder={'Password'}
-                        rules={[
-                            {
-                                required: true,
-                                message: 'Please enter your password!',
-                            },
-                        ]}
-                    />
-                    <div className="mb-6">
-                        <ProFormCheckbox noStyle name="autoLogin">
-                            Remember me
-                        </ProFormCheckbox>
-                        <a className="float-right text-blue-600 hover:text-blue-700">
-                            Forgot password
-                        </a>
-                    </div>
-                </ProLoginForm>
+                    placeholder="请输入用户名"
+                    rules={[
+                        {
+                            required: true,
+                            message: '请输入用户名！',
+                        },
+                    ]}
+                />
+                <ProFormText.Password
+                    name="password"
+                    fieldProps={{
+                        size: 'large',
+                        prefix: <LockOutlined />,
+                    }}
+                    placeholder="请输入密码"
+                    rules={[
+                        {
+                            required: true,
+                            message: '请输入密码！',
+                        },
+                    ]}
+                />
+                <div className="mb-6">
+                    <ProFormCheckbox noStyle name="autoLogin">
+                        记住我
+                    </ProFormCheckbox>
+                    <a className="float-right text-blue-600 hover:text-blue-700">
+                        忘记密码
+                    </a>
+                </div>
+            </ProLoginForm>
         </div>
     );
 };

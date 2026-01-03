@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, Avatar, Typography } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
-import { getUserInfo } from '@/api/auth';
+import { getCurrentUserInfo } from '@/api/system/user';
 
 const { Title } = Typography;
 
@@ -11,8 +11,8 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const res = await getUserInfo();
-                if (res.code === 200) {
+                const res = await getCurrentUserInfo();
+                if (res.code === 0) {  // 修正：后端成功码是0，不是200
                     setUser(res.data);
                 }
             } catch (error) {
