@@ -12,10 +12,9 @@ interface SidebarProps {
   collapsed: boolean;
 }
 
-// 递归转换菜单数据为 Ant Design Menu 格式
 const convertMenusToItems = (menus: MenuType[]): MenuProps['items'] => {
   return menus
-    .filter(menu => menu.is_visible && menu.menu_type !== 3) // 过滤掉按钮类型和隐藏菜单
+    .filter(menu => menu.is_visible && menu.menu_type !== 3)
     .map(menu => {
       const item: any = {
         key: menu.path || `menu-${menu.id}`,
@@ -23,7 +22,6 @@ const convertMenusToItems = (menus: MenuType[]): MenuProps['items'] => {
         icon: menu.icon ? <DynamicIcon type={menu.icon} /> : null,
       };
 
-      // 如果有子菜单，递归处理
       if (menu.children && menu.children.length > 0) {
         item.children = convertMenusToItems(menu.children);
       }
@@ -50,14 +48,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
       collapsed={collapsed}
       width={256}
       collapsedWidth={80}
-      className="fixed left-0 top-0 bottom-0 z-10 h-screen overflow-auto"
+      theme="dark"
+      className="overflow-y-auto scrollbar-hide select-none"
     >
-      {/* Logo */}
       <div className={`h-16 flex items-center justify-center text-white font-bold border-b border-white/10 ${collapsed ? 'text-xl' : 'text-2xl'}`}>
         {collapsed ? 'FP' : 'FastAPI Admin'}
       </div>
 
-      {/* Menu */}
       <Menu
         theme="dark"
         mode="inline"

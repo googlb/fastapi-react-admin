@@ -11,7 +11,6 @@ import type { Menu } from '@/types/api';
 
 const { Content } = Layout;
 
-// 在菜单树中查找路径，构建面包屑
 const findBreadcrumbPath = (
   menus: Menu[],
   targetPath: string,
@@ -41,13 +40,11 @@ const DashboardLayout: React.FC = () => {
     { title: <HomeOutlined />, path: '/' }
   ]);
 
-  // 初始化：获取菜单和用户信息
   useEffect(() => {
     fetchMyMenus();
     fetchUserInfo();
   }, [fetchMyMenus, fetchUserInfo]);
 
-  // 监听路由变化，更新面包屑
   useEffect(() => {
     const pathname = location.pathname;
 
@@ -67,7 +64,6 @@ const DashboardLayout: React.FC = () => {
         })),
       ]);
     } else {
-      // 如果找不到面包屑路径，使用当前路径
       setBreadcrumbItems([
         { title: <HomeOutlined />, path: '/' },
         { title: pathname.split('/').filter(Boolean).join(' / ') },
@@ -80,25 +76,20 @@ const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <Layout className="min-h-screen">
-      {/* 侧边栏 */}
+    <Layout className="h-screen overflow-hidden">
       <Sidebar collapsed={collapsed} />
 
-      {/* 主内容区域 */}
-      <Layout className={`transition-all duration-200 ${collapsed ? 'ml-20' : 'ml-64'}`}>
-        {/* 顶部栏 */}
+      <Layout className="flex flex-col h-full bg-gray-50 transition-all duration-200">
         <Header
           collapsed={collapsed}
           onToggleCollapse={handleToggleCollapse}
           breadcrumbItems={breadcrumbItems}
         />
 
-        {/* 标签页 */}
         <TabBar />
 
-        {/* 内容区 */}
-        <Content className="p-6 bg-gray-50 min-h-[calc(100vh-64px-49px)]">
-          <div className="bg-white rounded-lg shadow-sm p-6">
+        <Content className="flex-1 overflow-y-auto p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6 min-h-full">
             <Outlet />
           </div>
         </Content>
