@@ -1,109 +1,142 @@
-import axios, { type InternalAxiosRequestConfig } from 'axios';
+import axios, { type InternalAxiosRequestConfig,type AxiosRequestConfig, type AxiosResponse, AxiosError } from 'axios';
 import { message } from 'antd';
 import { useAuthStore } from '@/store/authStore';
-import { SUCCESS_CODE } from '@/types/api';
+import { router } from '@/router/router';
+import { SUCCESS_CODE, type ApiResponse } from '@/types/api';
+
+// 1. 提取 BaseURL，避免到处硬编码
+const BASE_URL = import.meta.env.VITE_API_PREFIX;
+
+// 扩展 axios 配置
+declare module 'axios' {
+  export interface InternalAxiosRequestConfig {
+    _retry?: boolean;
+  }
+}
 
 const service = axios.create({
-    baseURL: import.meta.env.VITE_API_PREFIX,
-    timeout: 10000,
+  baseURL: BASE_URL,
+  timeout: 10000,
 });
 
-// Request interceptor
+// 并发锁
+let isRefreshing = false;
+let requestQueue: Array<(token: string) => void> = [];
+
+const processQueue = (error: Error | null, token: string | null = null) => {
+  requestQueue.forEach((prom) => {
+    if (error) {
+      // reject(error) - 实际由外层 Promise 处理
+    } else if (token) {
+      prom(token);
+    }
+  });
+  requestQueue = [];
+};
+
+// --- 请求拦截 ---
 service.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => {
-        // 直接从 store 的 state 中获取 token
-        const { accessToken } = useAuthStore.getState();
-        if (accessToken && config.headers) {
-            config.headers.Authorization = `Bearer ${accessToken}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
+  (config: InternalAxiosRequestConfig) => {
+    const { accessToken } = useAuthStore.getState();
+    if (accessToken && config.headers) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
+    return config;
+  },
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor
+// --- 响应拦截 ---
 service.interceptors.response.use(
-    (response) => {
-        const res = response.data;
+  (response: AxiosResponse) => {
+    // 强制类型转换，这里假设后端一定返回 ApiResponse 结构
+    const res = response.data as ApiResponse;
 
-        if (res.code !== undefined && res.code !== SUCCESS_CODE) {
-            message.error(res.msg || 'Request failed');
-            return Promise.reject(new Error(res.msg || 'Request failed'));
-        }
-
-        return res;
-    },
-    async (error) => {
-        console.error('Request Error:', error);
-
-        if (error.response) {
-            const status = error.response.status;
-            const originalRequest = error.config;
-
-            // 调试：打印出请求的 URL
-            console.log('Failing request URL:', originalRequest.url);
-
-            // 检查是否是 401 错误、不是正在重试的请求、且请求的URL不是登录接口
-            if (status === 401 && !originalRequest._retry && originalRequest.url !== '/sys/users/login') {
-                originalRequest._retry = true;
-                
-                const { refreshToken } = useAuthStore.getState();
-                if (!refreshToken) {
-                    message.error('会话已过期，请重新登录');
-                    useAuthStore.getState().logout();
-                    window.location.href = '/login';
-                    return Promise.reject(new Error('No refresh token, redirecting to login.'));
-                }
-
-                try {
-                    // --- Token 刷新逻辑占位 ---
-                    console.log("尝试刷新 Token...");
-                    await new Promise(resolve => setTimeout(resolve, 500)); 
-                    const newTokens = { accessToken: 'new_fake_access_token', refreshToken: 'new_fake_refresh_token' };
-                    
-                    useAuthStore.getState().setTokens(newTokens);
-                    
-                    originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
-                    return service(originalRequest);
-
-                } catch (refreshError) {
-                    message.error('会话刷新失败，请重新登录');
-                    useAuthStore.getState().logout();
-                    window.location.href = '/login';
-                    return Promise.reject(refreshError);
-                }
-            } else if (status === 401 && originalRequest._retry) {
-                 message.error('会话刷新失败，请重新登录');
-                 useAuthStore.getState().logout();
-                 window.location.href = '/login';
-                 return Promise.reject(error);
-            }
-
-            switch (status) {
-                case 403:
-                    message.error('访问被拒绝');
-                    break;
-                case 404:
-                    message.error('资源未找到');
-                    break;
-                case 500:
-                    message.error('服务器内部错误');
-                    break;
-                default:
-                    if (status !== 401) { // 避免401被重复提示
-                       message.error(error.response.data?.msg || '请求失败');
-                    }
-            }
-        } else if (error.request) {
-            message.error('网络错误，请检查您的连接');
-        } else {
-            message.error('请求发起失败');
-        }
-
-        return Promise.reject(error);
+    // 1. 业务逻辑错误处理
+    if (res.code !== SUCCESS_CODE) {
+      message.error(res.msg || '请求失败');
+      return Promise.reject(new Error(res.msg || 'Business Error'));
     }
+
+    // 2.【核心优化】自动解包：直接返回 data 字段
+    // 这样前端组件调用时，拿到的就是干净的数据，不需要再 .data 了
+    return res.data;
+  },
+  async (error: AxiosError) => {
+    const originalRequest = error.config;
+    if (!originalRequest) return Promise.reject(error);
+
+    const status = error.response?.status;
+
+    // --- 401 自动刷新逻辑 ---
+    if (status === 401 && !originalRequest._retry) {
+      if (originalRequest.url?.includes('/auth/login')) {
+        return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          requestQueue.push((token) => {
+            if (originalRequest.headers) originalRequest.headers.Authorization = `Bearer ${token}`;
+            resolve(service(originalRequest));
+          });
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const { refreshToken, setTokens } = useAuthStore.getState();
+        if (!refreshToken) throw new Error('No refresh token');
+
+        // 【优化】使用 BASE_URL 变量拼接，不再硬编码
+        // 注意：这里必须用 axios.post 而不是 service.post，防止无限循环
+        const { data: refreshRes } = await axios.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
+            `${BASE_URL}/auth/refresh`,
+            { refreshToken }
+        );
+
+        if (refreshRes.code === SUCCESS_CODE) {
+            const newTokens = refreshRes.data;
+            setTokens(newTokens);
+            processQueue(null, newTokens.accessToken);
+
+            if (originalRequest.headers) originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
+            return service(originalRequest);
+        }
+      } catch (refreshError) {
+        processQueue(new Error('Refresh failed'), null);
+        useAuthStore.getState().logout();
+        message.warning('登录已过期');
+        router.navigate('/login', { replace: true });
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    // --- 通用错误处理 ---
+    const msg = (error.response?.data as any)?.msg || error.message || '请求失败';
+    message.error(msg);
+    return Promise.reject(error);
+  }
 );
+
+// --- 3.【核心优化】类型友好的请求方法 ---
+// T 代表最终返回的数据类型（已经解包后的）
+export const request = {
+  get: <T = any>(url: string, config?: AxiosRequestConfig) =>
+    service.get<T, T>(url, config), // 注意这里的类型参数变化
+
+  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
+    service.post<T, T>(url, data, config),
+
+  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
+    service.put<T, T>(url, data, config),
+
+  delete: <T = any>(url: string, config?: AxiosRequestConfig) =>
+    service.delete<T, T>(url, config),
+};
 
 export default service;
