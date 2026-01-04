@@ -1,14 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App as AntApp } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
-import App from './App'; // 导入新的根组件
+import App from './App'; // 导入你的根组件
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ConfigProvider locale={zhCN}>
-      <App />
+      <AntApp>
+        <App />
+      </AntApp>
     </ConfigProvider>
   </React.StrictMode>
 );

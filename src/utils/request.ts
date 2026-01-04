@@ -42,7 +42,8 @@ service.interceptors.response.use(
             const status = error.response.status;
             const originalRequest = error.config;
 
-            if (status === 401 && !originalRequest._retry) {
+            // 检查是否是 401 错误、不是正在重试的请求、且请求的URL不是登录接口
+            if (status === 401 && !originalRequest._retry && originalRequest.url !== '/sys/users/login') {
                 originalRequest._retry = true;
                 
                 const { refreshToken } = useAuthStore.getState();
@@ -55,11 +56,8 @@ service.interceptors.response.use(
 
                 try {
                     // --- Token 刷新逻辑占位 ---
-                    // 实际项目中，你需要调用后端的刷新 token 接口
-                    // const { data: newTokens } = await axios.post('/api/auth/refresh', { refreshToken });
-                    // 此处为模拟
                     console.log("尝试刷新 Token...");
-                    await new Promise(resolve => setTimeout(resolve, 500)); // 模拟网络延迟
+                    await new Promise(resolve => setTimeout(resolve, 500)); 
                     const newTokens = { accessToken: 'new_fake_access_token', refreshToken: 'new_fake_refresh_token' };
                     
                     useAuthStore.getState().setTokens(newTokens);
