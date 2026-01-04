@@ -1,18 +1,20 @@
-import axios from 'axios';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
 import { message } from 'antd';
+import { useAuthStore } from '@/store/authStore';
 import { SUCCESS_CODE } from '@/types/api';
 
 const service = axios.create({
     baseURL: import.meta.env.VITE_API_PREFIX,
-    timeout: 5000,
+    timeout: 10000,
 });
 
 // Request interceptor
 service.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('access_token'); // 使用新的token存储键名
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+    (config: InternalAxiosRequestConfig) => {
+        // 直接从 store 的 state 中获取 token
+        const { accessToken } = useAuthStore.getState();
+        if (accessToken && config.headers) {
+            config.headers.Authorization = `Bearer ${accessToken}`;
         }
         return config;
     },
@@ -26,7 +28,6 @@ service.interceptors.response.use(
     (response) => {
         const res = response.data;
 
-        // Backend returns { code: 0, msg: "success", data: ..., is_success: boolean }
         if (res.code !== undefined && res.code !== SUCCESS_CODE) {
             message.error(res.msg || 'Request failed');
             return Promise.reject(new Error(res.msg || 'Request failed'));
@@ -34,34 +35,70 @@ service.interceptors.response.use(
 
         return res;
     },
-    (error) => {
+    async (error) => {
         console.error('Request Error:', error);
 
         if (error.response) {
             const status = error.response.status;
-            switch (status) {
-                case 401:
-                    message.error('Unauthorized, please login again');
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
+            const originalRequest = error.config;
+
+            if (status === 401 && !originalRequest._retry) {
+                originalRequest._retry = true;
+                
+                const { refreshToken } = useAuthStore.getState();
+                if (!refreshToken) {
+                    message.error('会话已过期，请重新登录');
+                    useAuthStore.getState().logout();
                     window.location.href = '/login';
-                    break;
+                    return Promise.reject(new Error('No refresh token, redirecting to login.'));
+                }
+
+                try {
+                    // --- Token 刷新逻辑占位 ---
+                    // 实际项目中，你需要调用后端的刷新 token 接口
+                    // const { data: newTokens } = await axios.post('/api/auth/refresh', { refreshToken });
+                    // 此处为模拟
+                    console.log("尝试刷新 Token...");
+                    await new Promise(resolve => setTimeout(resolve, 500)); // 模拟网络延迟
+                    const newTokens = { accessToken: 'new_fake_access_token', refreshToken: 'new_fake_refresh_token' };
+                    
+                    useAuthStore.getState().setTokens(newTokens);
+                    
+                    originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
+                    return service(originalRequest);
+
+                } catch (refreshError) {
+                    message.error('会话刷新失败，请重新登录');
+                    useAuthStore.getState().logout();
+                    window.location.href = '/login';
+                    return Promise.reject(refreshError);
+                }
+            } else if (status === 401 && originalRequest._retry) {
+                 message.error('会话刷新失败，请重新登录');
+                 useAuthStore.getState().logout();
+                 window.location.href = '/login';
+                 return Promise.reject(error);
+            }
+
+            switch (status) {
                 case 403:
-                    message.error('Access denied');
+                    message.error('访问被拒绝');
                     break;
                 case 404:
-                    message.error('Resource not found');
+                    message.error('资源未找到');
                     break;
                 case 500:
-                    message.error('Server error');
+                    message.error('服务器内部错误');
                     break;
                 default:
-                    message.error(error.response.data?.msg || 'Request failed');
+                    if (status !== 401) { // 避免401被重复提示
+                       message.error(error.response.data?.msg || '请求失败');
+                    }
             }
         } else if (error.request) {
-            message.error('Network error, please check your connection');
+            message.error('网络错误，请检查您的连接');
         } else {
-            message.error('Request failed');
+            message.error('请求发起失败');
         }
 
         return Promise.reject(error);

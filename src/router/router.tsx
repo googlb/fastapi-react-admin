@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { Spin } from 'antd';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import DashboardLayout from '@/layouts/DashboardLayout';
+import { useAuthStore } from '@/store/authStore';
 
 // 懒加载组件
 const Login = lazy(() => import('@/pages/Login'));
@@ -18,16 +19,17 @@ const PlaceholderPage = lazy(() => import('@/pages/PlaceholderPage'));
 
 // Loading 组件
 const PageLoading: React.FC = () => (
-  <div className="flex items-center justify-center min-h-[400px]">
-    <Spin size="large" tip="加载中..." />
+  <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+    <Spin size="large" />
+    <span className="text-gray-500">加载中...</span>
   </div>
 );
 
 // 路由守卫：保护需要登录的路由
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const token = localStorage.getItem('access_token');
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
-  if (!token) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
@@ -36,9 +38,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 // 路由守卫：已登录用户重定向
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const token = localStorage.getItem('access_token');
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
-  if (token) {
+  if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 

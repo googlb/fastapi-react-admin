@@ -1,97 +1,79 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { login as loginApi } from '@/api/auth';
-import { getCurrentUserInfo } from '@/api/system/user';
-import type { User, LoginResponse } from '@/types/api';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import type { User } from '@/types/api';
 
+// Store State 的类型定义
 interface AuthState {
-  user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
-  loading: boolean;
+  user: User | null;
   isAuthenticated: boolean;
-
-  login: (credentials: { username: string; password: string }) => Promise<void>;
-  logout: () => void;
-  fetchUserInfo: () => Promise<void>;
-  setTokens: (access: string, refresh: string) => void;
-  clearTokens: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
+// Store Actions 的类型定义
+interface AuthActions {
+  login: (tokens: { accessToken: string; refreshToken: string }, user: User) => void;
+  logout: () => void;
+  setTokens: (tokens: { accessToken: string; refreshToken: string }) => void;
+  setUser: (user: User) => void;
+  reset: () => void;
+}
+
+// 初始状态
+const initialState: AuthState = {
+  accessToken: null,
+  refreshToken: null,
+  user: null,
+  isAuthenticated: false,
+};
+
+export const useAuthStore = create<AuthState & AuthActions>()(
   persist(
-    (set, get) => ({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      loading: false,
-      isAuthenticated: false,
-
-      // 登录
-      login: async (credentials) => {
-        set({ loading: true });
-        try {
-          const response = await loginApi(credentials);
-          if (response.code === 0 && response.data) {
-            const { access_token, refresh_token } = response.data as LoginResponse;
-
-            // 通过 setTokens 更新状态（persist 会自动保存到 localStorage）
-            get().setTokens(access_token, refresh_token);
-
-            // 同时标记为已认证，加载用户信息
-            set({ loading: false, isAuthenticated: true });
-            await get().fetchUserInfo(); // 登录成功后立即获取用户信息
-          } else {
-            throw new Error(response.msg || 'Login failed');
-          }
-        } catch (error) {
-          set({ loading: false });
-          throw error;
-        }
-      },
-
-      // 登出
+    (set) => ({
+      ...initialState,
+      
+      login: (tokens, user) =>
+        set({
+          ...tokens,
+          user,
+          isAuthenticated: true,
+        }),
+      
       logout: () => {
-        get().clearTokens();
-        set({ user: null, isAuthenticated: false });
+        set(initialState);
       },
 
-      // 获取用户信息
-      fetchUserInfo: async () => {
-        try {
-          const response = await getCurrentUserInfo();
-          if (response.code === 0 && response.data) {
-            set({ user: response.data, isAuthenticated: true });
-          } else {
-            // 获取失败视为未登录
-            get().logout();
-          }
-        } catch (error) {
-          console.error('Failed to fetch user info:', error);
-          get().logout(); // token 可能失效，直接登出
-        }
-      },
+      setTokens: (tokens) =>
+        set({
+          ...tokens,
+        }),
 
-      // 内部方法：设置 token（persist 会自动同步到 storage）
-      setTokens: (access, refresh) =>
-        set({ accessToken: access, refreshToken: refresh, isAuthenticated: true }),
-
-      // 内部方法：清除 token
-      clearTokens: () =>
-        set({ accessToken: null, refreshToken: null, isAuthenticated: false }),
+      setUser: (user) => set({ user }),
+      
+      reset: () => set(initialState),
     }),
     {
       name: 'auth-storage', // localStorage 中的 key
       storage: createJSONStorage(() => localStorage),
-      // 可选：只持久化 token，不持久化 user/loading 等临时状态
-      partialize: (state) => ({
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
+      partialize: (state) => ({ 
+        accessToken: state.accessToken, 
+        refreshToken: state.refreshToken, 
+        user: state.user 
       }),
     }
   )
 );
 
-
-
-export default useAuthStore;
+// 订阅状态变化，动态更新 isAuthenticated
+let lastAccessToken = useAuthStore.getState().accessToken;
+useAuthStore.subscribe((state) => {
+  const currentAccessToken = state.accessToken;
+  if (currentAccessToken !== lastAccessToken) {
+    // 使用 setImmediate 或 setTimeout 将更新推迟到下一个事件循环
+    // 以避免在当前渲染周期内再次更新 state，这在某些 React 版本中可能导致警告
+    Promise.resolve().then(() => {
+        useAuthStore.setState({ isAuthenticated: !!currentAccessToken });
+    });
+  }
+  lastAccessToken = currentAccessToken;
+});
