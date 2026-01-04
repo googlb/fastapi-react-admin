@@ -42,6 +42,9 @@ service.interceptors.response.use(
             const status = error.response.status;
             const originalRequest = error.config;
 
+            // 调试：打印出请求的 URL
+            console.log('Failing request URL:', originalRequest.url);
+
             // 检查是否是 401 错误、不是正在重试的请求、且请求的URL不是登录接口
             if (status === 401 && !originalRequest._retry && originalRequest.url !== '/sys/users/login') {
                 originalRequest._retry = true;
