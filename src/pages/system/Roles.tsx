@@ -75,9 +75,7 @@ const Roles = () => {
         setLoading(true);
         try {
             const response = await getRoles({ page: 1, size: 100 });
-            if (response.code === 0 && response.data) {
-                setRoles(response.data.items);
-            }
+            setRoles(response.items);
         } catch (error) {
             console.error('Failed to fetch roles:', error);
         } finally {
@@ -104,12 +102,8 @@ const Roles = () => {
     const handleDelete = async (id: number) => {
         if (window.confirm('Are you sure you want to delete this role?')) {
             try {
-                const response = await deleteRole(id);
-                if (response.code === 0) {
-                    fetchRoles();
-                } else {
-                    alert(response.msg || 'Failed to delete role');
-                }
+                await deleteRole(id);
+                fetchRoles();
             } catch (error) {
                 console.error('Failed to delete role:', error);
                 alert('Failed to delete role');
@@ -123,24 +117,16 @@ const Roles = () => {
             
             if (editingRole) {
                 // 更新角色
-                const response = await updateRole(editingRole.id, values);
-                if (response.code === 0) {
-                    setModalVisible(false);
-                    form.resetFields();
-                    fetchRoles();
-                } else {
-                    alert(response.msg || 'Failed to update role');
-                }
+                await updateRole(editingRole.id, values);
+                setModalVisible(false);
+                form.resetFields();
+                fetchRoles();
             } else {
                 // 创建角色
-                const response = await createRole(values);
-                if (response.code === 0) {
-                    setModalVisible(false);
-                    form.resetFields();
-                    fetchRoles();
-                } else {
-                    alert(response.msg || 'Failed to create role');
-                }
+                await createRole(values);
+                setModalVisible(false);
+                form.resetFields();
+                fetchRoles();
             }
         } catch (error) {
             console.error('Form validation failed:', error);

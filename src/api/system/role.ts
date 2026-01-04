@@ -1,23 +1,32 @@
-import service from '@/utils/request';
-import type { ApiResponse, Role, PageInfo } from '@/types/api';
+import { request } from '@/utils/request';
+import type { Role, PageInfo } from '@/types/api';
 
-// 角色相关接口
-export const getRoles = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageInfo<Role>>> => {
-    return service.get('/sys/roles', { params });
+// 1. 获取角色列表
+// 返回值类型：Promise<PageInfo<Role>>
+export const getRoles = (params?: { page?: number; size?: number }) => {
+    return request.get<PageInfo<Role>>('/sys/roles', { params });
 };
 
-export const getRoleById = (id: number): Promise<ApiResponse<Role>> => {
-    return service.get(`/sys/roles/${id}`);
+// 2. 获取单个角色详情
+// 返回值类型：Promise<Role>
+export const getRoleById = (id: number) => {
+    return request.get<Role>(`/sys/roles/${id}`);
 };
 
-export const createRole = (data: Omit<Role, 'id' | 'created_at' | 'updated_at'>): Promise<ApiResponse<Role>> => {
-    return service.post('/sys/roles', data);
+// 3. 创建角色
+// 返回值类型：Promise<Role>
+export const createRole = (data: Omit<Role, 'id' | 'created_at' | 'updated_at'>) => {
+    return request.post<Role>('/sys/roles', data);
 };
 
-export const updateRole = (id: number, data: Partial<Omit<Role, 'id' | 'created_at' | 'updated_at'>>): Promise<ApiResponse<Role>> => {
-    return service.put(`/sys/roles/${id}`, data);
+// 4. 更新角色
+// 返回值类型：Promise<Role>
+export const updateRole = (id: number, data: Partial<Role>) => {
+    return request.put<Role>(`/sys/roles/${id}`, data);
 };
 
-export const deleteRole = (id: number): Promise<ApiResponse<{ message: string }>> => {
-    return service.delete(`/sys/roles/${id}`);
+// 5. 删除角色
+// 返回值类型：Promise<{ message: string }> 或者 void
+export const deleteRole = (id: number) => {
+    return request.delete<{ message: string }>(`/sys/roles/${id}`);
 };

@@ -1,52 +1,71 @@
-import service from '@/utils/request';
-import type { ApiResponse, Dict, DictData, PageInfo } from '@/types/api';
+import { request } from '@/utils/request';
+import type { Dict, DictData, PageInfo } from '@/types/api';
 
-// 字典相关接口
-export const getDicts = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageInfo<Dict>>> => {
-    return service.get('/sys/dicts', { params });
+// 1. 获取字典列表
+// 返回值类型：Promise<PageInfo<Dict>>
+export const getDicts = (params?: { page?: number; size?: number }) => {
+    return request.get<PageInfo<Dict>>('/sys/dicts', { params });
 };
 
-export const getDictById = (id: number): Promise<ApiResponse<Dict>> => {
-    return service.get(`/sys/dicts/${id}`);
+// 2. 获取单个字典详情
+// 返回值类型：Promise<Dict>
+export const getDictById = (id: number) => {
+    return request.get<Dict>(`/sys/dicts/${id}`);
 };
 
-export const getDictByCode = (code: string): Promise<ApiResponse<{ 
-    id: number; 
-    name: string; 
-    code: string; 
-    description?: string;
-    created_at: string;
-    updated_at: string;
-    data: DictData[]; 
-}>> => {
-    return service.get(`/sys/dicts/code/${code}`);
+// 3. 根据字典编码获取字典
+// 返回值类型：Promise<{ id: number; name: string; code: string; description?: string; created_at: string; updated_at: string; data: DictData[]; }>
+export const getDictByCode = (code: string) => {
+    return request.get<{ 
+        id: number; 
+        name: string; 
+        code: string; 
+        description?: string;
+        created_at: string;
+        updated_at: string;
+        data: DictData[]; 
+    }>(`/sys/dicts/code/${code}`);
 };
 
-export const createDict = (data: Omit<Dict, 'id' | 'created_at' | 'updated_at'>): Promise<ApiResponse<Dict>> => {
-    return service.post('/sys/dicts', data);
+// 4. 创建字典
+// 返回值类型：Promise<Dict>
+export const createDict = (data: Omit<Dict, 'id' | 'created_at' | 'updated_at'>) => {
+    return request.post<Dict>('/sys/dicts', data);
 };
 
-export const updateDict = (id: number, data: Partial<Omit<Dict, 'id' | 'created_at' | 'updated_at'>>): Promise<ApiResponse<Dict>> => {
-    return service.put(`/sys/dicts/${id}`, data);
+// 5. 更新字典
+// 返回值类型：Promise<Dict>
+export const updateDict = (id: number, data: Partial<Dict>) => {
+    return request.put<Dict>(`/sys/dicts/${id}`, data);
 };
 
-export const deleteDict = (id: number): Promise<ApiResponse<{ message: string }>> => {
-    return service.delete(`/sys/dicts/${id}`);
+// 6. 删除字典
+// 返回值类型：Promise<{ message: string }> 或者 void
+export const deleteDict = (id: number) => {
+    return request.delete<{ message: string }>(`/sys/dicts/${id}`);
 };
 
 // 字典数据相关接口
-export const getDictData = (dictId: number, params?: { page?: number; size?: number }): Promise<ApiResponse<PageInfo<DictData>>> => {
-    return service.get(`/sys/dicts/${dictId}/data`, { params });
+// 7. 获取字典数据列表
+// 返回值类型：Promise<PageInfo<DictData>>
+export const getDictData = (dictId: number, params?: { page?: number; size?: number }) => {
+    return request.get<PageInfo<DictData>>(`/sys/dicts/${dictId}/data`, { params });
 };
 
-export const createDictData = (dictId: number, data: Omit<DictData, 'id' | 'created_at' | 'updated_at'>): Promise<ApiResponse<DictData>> => {
-    return service.post(`/sys/dicts/${dictId}/data`, data);
+// 8. 创建字典数据
+// 返回值类型：Promise<DictData>
+export const createDictData = (dictId: number, data: Omit<DictData, 'id' | 'created_at' | 'updated_at'>) => {
+    return request.post<DictData>(`/sys/dicts/${dictId}/data`, data);
 };
 
-export const updateDictData = (id: number, data: Partial<Omit<DictData, 'id' | 'created_at' | 'updated_at'>>): Promise<ApiResponse<DictData>> => {
-    return service.put(`/sys/dicts/data/${id}`, data);
+// 9. 更新字典数据
+// 返回值类型：Promise<DictData>
+export const updateDictData = (id: number, data: Partial<DictData>) => {
+    return request.put<DictData>(`/sys/dicts/data/${id}`, data);
 };
 
-export const deleteDictData = (id: number): Promise<ApiResponse<{ message: string }>> => {
-    return service.delete(`/sys/dicts/data/${id}`);
+// 10. 删除字典数据
+// 返回值类型：Promise<{ message: string }> 或者 void
+export const deleteDictData = (id: number) => {
+    return request.delete<{ message: string }>(`/sys/dicts/data/${id}`);
 };

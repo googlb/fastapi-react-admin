@@ -27,11 +27,7 @@ export const useSystemStore = create<SystemState>((set) => ({
     set({ loading: true });
     try {
       const response = await getMyMenus();
-      if (response.code === 0 && response.data) {
-        set({ menus: response.data, loading: false });
-      } else {
-        set({ menus: [], loading: false });
-      }
+      set({ menus: response, loading: false });
     } catch (error) {
       console.error('Failed to fetch menus:', error);
       set({ menus: [], loading: false });

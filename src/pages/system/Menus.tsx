@@ -96,9 +96,7 @@ const Menus: React.FC = () => {
         setLoading(true);
         try {
             const response = await getMenus({ page: 1, size: 100 });
-            if (response.code === 0 && response.data) {
-                setMenus(response.data.items);
-            }
+            setMenus(response.items);
         } catch (error) {
             console.error('Failed to fetch menus:', error);
         } finally {
@@ -109,17 +107,15 @@ const Menus: React.FC = () => {
     const fetchMenuTree = async () => {
         try {
             const response = await getMenuTree();
-            if (response.code === 0 && response.data) {
-                // 转换菜单数据以适应Tree组件
-                const convertToTreeData = (menus: Menu[]): any[] => {
-                    return menus.map(menu => ({
-                        title: menu.title,
-                        key: menu.id,
-                        children: menu.children ? convertToTreeData(menu.children) : [],
-                    }));
-                };
-                setTreeData(convertToTreeData(response.data));
-            }
+            // 转换菜单数据以适应Tree组件
+            const convertToTreeData = (menus: Menu[]): any[] => {
+                return menus.map(menu => ({
+                    title: menu.title,
+                    key: menu.id,
+                    children: menu.children ? convertToTreeData(menu.children) : [],
+                }));
+            };
+            setTreeData(convertToTreeData(response));
         } catch (error) {
             console.error('Failed to fetch menu tree:', error);
         }
@@ -148,13 +144,9 @@ const Menus: React.FC = () => {
     const handleDelete = async (id: number) => {
         if (window.confirm('Are you sure you want to delete this menu?')) {
             try {
-                const response = await deleteMenu(id);
-                if (response.code === 0) {
-                    fetchMenus();
-                    fetchMenuTree();
-                } else {
-                    alert(response.msg || 'Failed to delete menu');
-                }
+                await deleteMenu(id);
+                fetchMenus();
+                fetchMenuTree();
             } catch (error) {
                 console.error('Failed to delete menu:', error);
                 alert('Failed to delete menu');
@@ -168,26 +160,18 @@ const Menus: React.FC = () => {
             
             if (editingMenu) {
                 // 更新菜单
-                const response = await updateMenu(editingMenu.id, values);
-                if (response.code === 0) {
-                    setModalVisible(false);
-                    form.resetFields();
-                    fetchMenus();
-                    fetchMenuTree();
-                } else {
-                    alert(response.msg || 'Failed to update menu');
-                }
+                await updateMenu(editingMenu.id, values);
+                setModalVisible(false);
+                form.resetFields();
+                fetchMenus();
+                fetchMenuTree();
             } else {
                 // 创建菜单
-                const response = await createMenu(values);
-                if (response.code === 0) {
-                    setModalVisible(false);
-                    form.resetFields();
-                    fetchMenus();
-                    fetchMenuTree();
-                } else {
-                    alert(response.msg || 'Failed to create menu');
-                }
+                await createMenu(values);
+                setModalVisible(false);
+                form.resetFields();
+                fetchMenus();
+                fetchMenuTree();
             }
         } catch (error) {
             console.error('Form validation failed:', error);

@@ -12,9 +12,7 @@ const Dashboard = () => {
         const fetchUser = async () => {
             try {
                 const res = await getCurrentUserInfo();
-                if (res.code === 0) {  // 修正：后端成功码是0，不是200
-                    setUser(res.data);
-                }
+                setUser(res);
             } catch (error) {
                 console.error('Failed to fetch user', error);
             }

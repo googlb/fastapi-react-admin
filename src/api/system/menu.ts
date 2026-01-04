@@ -1,31 +1,44 @@
-import service from '@/utils/request';
-import type { ApiResponse, Menu, PageInfo } from '@/types/api';
+import { request } from '@/utils/request';
+import type { Menu, PageInfo } from '@/types/api';
 
-// 菜单相关接口
-export const getMyMenus = (): Promise<ApiResponse<Menu[]>> => {
-    return service.get('/sys/menus/me');
+// 1. 获取当前用户菜单
+// 返回值类型：Promise<Menu[]>
+export const getMyMenus = () => {
+    return request.get<Menu[]>('/sys/menus/me');
 };
 
-export const getMenus = (params?: { page?: number; size?: number }): Promise<ApiResponse<PageInfo<Menu>>> => {
-    return service.get('/sys/menus', { params });
+// 2. 获取菜单列表
+// 返回值类型：Promise<PageInfo<Menu>>
+export const getMenus = (params?: { page?: number; size?: number }) => {
+    return request.get<PageInfo<Menu>>('/sys/menus', { params });
 };
 
-export const getMenuTree = (params?: { parent_id?: number }): Promise<ApiResponse<Menu[]>> => {
-    return service.get('/sys/menus/tree', { params });
+// 3. 获取菜单树
+// 返回值类型：Promise<Menu[]>
+export const getMenuTree = (params?: { parent_id?: number }) => {
+    return request.get<Menu[]>('/sys/menus/tree', { params });
 };
 
-export const getMenuById = (id: number): Promise<ApiResponse<Menu>> => {
-    return service.get(`/sys/menus/${id}`);
+// 4. 获取单个菜单详情
+// 返回值类型：Promise<Menu>
+export const getMenuById = (id: number) => {
+    return request.get<Menu>(`/sys/menus/${id}`);
 };
 
-export const createMenu = (data: Omit<Menu, 'id' | 'created_at' | 'updated_at' | 'children'>): Promise<ApiResponse<Menu>> => {
-    return service.post('/sys/menus', data);
+// 5. 创建菜单
+// 返回值类型：Promise<Menu>
+export const createMenu = (data: Omit<Menu, 'id' | 'created_at' | 'updated_at' | 'children'>) => {
+    return request.post<Menu>('/sys/menus', data);
 };
 
-export const updateMenu = (id: number, data: Partial<Omit<Menu, 'id' | 'created_at' | 'updated_at'>>): Promise<ApiResponse<Menu>> => {
-    return service.put(`/sys/menus/${id}`, data);
+// 6. 更新菜单
+// 返回值类型：Promise<Menu>
+export const updateMenu = (id: number, data: Partial<Menu>) => {
+    return request.put<Menu>(`/sys/menus/${id}`, data);
 };
 
-export const deleteMenu = (id: number): Promise<ApiResponse<{ message: string }>> => {
-    return service.delete(`/sys/menus/${id}`);
+// 7. 删除菜单
+// 返回值类型：Promise<{ message: string }> 或者 void
+export const deleteMenu = (id: number) => {
+    return request.delete<{ message: string }>(`/sys/menus/${id}`);
 };
