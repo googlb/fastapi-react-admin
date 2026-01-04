@@ -3,7 +3,7 @@
 ## Phase 1: 设置 Zustand 存储
 
 -   [x] Task: 安装 `zustand` 和 `zustand/middleware`（如果尚未安装）。
--   [ ] Task: 创建 `src/store/authStore.ts` 文件。
+-   [~] Task: 创建 `src/store/authStore.ts` 文件。
 -   [ ] Task: **编写测试** - 为 `useAuthStore` 的 `setToken` 和 `clearAuth` 等核心操作编写单元测试。
 -   [ ] Task: **实现代码** - 定义 `useAuthStore` 的 state（状态）和 actions（操作），并集成 `persist` 中间件以将状态持久化到 `localStorage`，确保测试通过。
 -   [ ] Task: Conductor - User Manual Verification 'Phase 1: 设置 Zustand 存储' (Protocol in workflow.md)
