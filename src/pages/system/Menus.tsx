@@ -1,17 +1,17 @@
-import { Table, Button, Space, Tag, Tree, Typography, Modal, Form, Input, InputNumber, Select } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Select } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ExpandOutlined, ShrinkOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
-import { getMenus, createMenu, updateMenu, deleteMenu, getMenuTree } from '@/api/system/menu';
+import { createMenu, updateMenu, deleteMenu, getMenuTree } from '@/api/system/menu';
 import type { Menu } from '@/types/api';
-
-const { Title } = Typography;
+import DynamicIcon from '@/components/DynamicIcon';
 
 const Menus: React.FC = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [editingMenu, setEditingMenu] = useState<Menu | null>(null);
     const [menus, setMenus] = useState<Menu[]>([]);
-    const [treeData, setTreeData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
+    const [isAllExpanded, setIsAllExpanded] = useState(true);
     const [form] = Form.useForm();
 
     const columns = [
@@ -19,6 +19,12 @@ const Menus: React.FC = () => {
             title: 'ID',
             dataIndex: 'id',
             key: 'id',
+        },
+        {
+            title: 'Icon',
+            dataIndex: 'icon',
+            key: 'icon',
+            render: (icon: string) => icon ? <DynamicIcon type={icon} /> : null,
         },
         {
             title: 'Title',
@@ -36,11 +42,6 @@ const Menus: React.FC = () => {
             key: 'path',
         },
         {
-            title: 'Icon',
-            dataIndex: 'icon',
-            key: 'icon',
-        },
-        {
             title: 'Sort',
             dataIndex: 'sort',
             key: 'sort',
@@ -50,7 +51,7 @@ const Menus: React.FC = () => {
             dataIndex: 'menu_type',
             key: 'menu_type',
             render: (type: number) => (
-                <Tag color={type === 1 ? 'blue' : type === 2 ? 'green' : 'orange'}>
+                <Tag color={type === 1 ? 'processing' : type === 2 ? 'success' : 'warning'}>
                     {type === 1 ? 'Directory' : type === 2 ? 'Menu' : 'Button'}
                 </Tag>
             ),
@@ -60,7 +61,7 @@ const Menus: React.FC = () => {
             dataIndex: 'status',
             key: 'status',
             render: (status: number) => (
-                <Tag color={status === 1 ? 'green' : 'red'}>
+                <Tag color={status === 1 ? 'success' : 'error'}>
                     {status === 1 ? 'Active' : 'Inactive'}
                 </Tag>
             ),
@@ -68,7 +69,7 @@ const Menus: React.FC = () => {
         {
             title: 'Actions',
             key: 'actions',
-            render: (_: any, record: Menu) => (
+            render: (_: React.ReactNode, record: Menu) => (
                 <Space size="small">
                     <Button 
                         type="link" 
@@ -95,8 +96,12 @@ const Menus: React.FC = () => {
     const fetchMenus = async () => {
         setLoading(true);
         try {
-            const response = await getMenus({ page: 1, size: 100 });
-            setMenus(response.items);
+            const response = await getMenuTree();
+            setMenus(response);
+            // 默认展开所有节点
+            const allKeys = getAllMenuKeys(response);
+            setExpandedRowKeys(allKeys);
+            setIsAllExpanded(true);
         } catch (error) {
             console.error('Failed to fetch menus:', error);
         } finally {
@@ -104,32 +109,39 @@ const Menus: React.FC = () => {
         }
     };
 
-    const fetchMenuTree = async () => {
-        try {
-            const response = await getMenuTree();
-            // 转换菜单数据以适应Tree组件
-            const convertToTreeData = (menus: Menu[]): any[] => {
-                return menus.map(menu => ({
-                    title: menu.title,
-                    key: menu.id,
-                    children: menu.children ? convertToTreeData(menu.children) : [],
-                }));
-            };
-            setTreeData(convertToTreeData(response));
-        } catch (error) {
-            console.error('Failed to fetch menu tree:', error);
-        }
+    // 递归获取所有菜单项的key
+    const getAllMenuKeys = (menuList: Menu[]): React.Key[] => {
+        let keys: React.Key[] = [];
+        menuList.forEach(menu => {
+            keys.push(menu.id);
+            if (menu.children && menu.children.length > 0) {
+                keys = keys.concat(getAllMenuKeys(menu.children));
+            }
+        });
+        return keys;
     };
 
     useEffect(() => {
         fetchMenus();
-        fetchMenuTree();
-    }, []);
+    }, [fetchMenus]);
 
     const handleAdd = () => {
         setEditingMenu(null);
         form.resetFields();
         setModalVisible(true);
+    };
+
+    const toggleExpandAll = () => {
+        if (isAllExpanded) {
+            // 收起所有
+            setExpandedRowKeys([]);
+            setIsAllExpanded(false);
+        } else {
+            // 展开所有
+            const allKeys = getAllMenuKeys(menus);
+            setExpandedRowKeys(allKeys);
+            setIsAllExpanded(true);
+        }
     };
 
     const handleEdit = (menu: Menu) => {
@@ -142,16 +154,20 @@ const Menus: React.FC = () => {
     };
 
     const handleDelete = async (id: number) => {
-        if (window.confirm('Are you sure you want to delete this menu?')) {
-            try {
-                await deleteMenu(id);
-                fetchMenus();
-                fetchMenuTree();
-            } catch (error) {
-                console.error('Failed to delete menu:', error);
-                alert('Failed to delete menu');
-            }
-        }
+        Modal.confirm({
+            title: '确认删除',
+            content: '您确定要删除此菜单吗？此操作不可恢复。',
+            okText: '确认',
+            cancelText: '取消',
+            onOk: async () => {
+                try {
+                    await deleteMenu(id);
+                    fetchMenus();
+                } catch (error) {
+                    console.error('删除菜单失败:', error);
+                }
+            },
+        });
     };
 
     const handleModalOk = async () => {
@@ -164,14 +180,12 @@ const Menus: React.FC = () => {
                 setModalVisible(false);
                 form.resetFields();
                 fetchMenus();
-                fetchMenuTree();
             } else {
                 // 创建菜单
                 await createMenu(values);
                 setModalVisible(false);
                 form.resetFields();
                 fetchMenus();
-                fetchMenuTree();
             }
         } catch (error) {
             console.error('Form validation failed:', error);
@@ -186,41 +200,39 @@ const Menus: React.FC = () => {
 
     return (
         <div>
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Title level={4} style={{ margin: 0 }}>
-                    Menu Management
-                </Title>
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 8 }}>
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
                     Add Menu
                 </Button>
+                <Button 
+                    icon={isAllExpanded ? <ShrinkOutlined /> : <ExpandOutlined />} 
+                    onClick={toggleExpandAll}
+                >
+                    {isAllExpanded ? 'Collapse All' : 'Expand All'}
+                </Button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div>
-                    <Title level={5}>Menu Tree</Title>
-                    <Tree
-                        showLine
-                        defaultExpandAll
-                        treeData={treeData}
-                        style={{ background: '#fff', padding: 16 }}
-                    />
-                </div>
-                <div>
-                    <Title level={5}>Menu List</Title>
-                    <Table
-                        columns={columns}
-                        dataSource={menus}
-                        loading={loading}
-                        rowKey="id"
-                        pagination={{ 
-                            pageSize: 10,
-                            showSizeChanger: true,
-                            showQuickJumper: true,
-                        }}
-                        size="small"
-                    />
-                </div>
-            </div>
+            <Table
+                columns={columns}
+                dataSource={menus}
+                loading={loading}
+                rowKey="id"
+                pagination={{ 
+                    pageSize: 20,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total) => `Total ${total} items`,
+                }}
+                expandable={{
+                    expandedRowKeys,
+                    onExpandedRowsChange: (expandedKeys: readonly React.Key[]) => {
+                        setExpandedRowKeys([...expandedKeys]);
+                        setIsAllExpanded(expandedKeys.length === getAllMenuKeys(menus).length);
+                    },
+                    childrenColumnName: 'children',
+                }}
+                size="middle"
+            />
 
             <Modal
                 title={editingMenu ? "Edit Menu" : "Add Menu"}
