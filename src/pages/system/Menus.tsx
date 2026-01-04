@@ -1,6 +1,6 @@
 import { Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Select } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ExpandOutlined, ShrinkOutlined } from '@ant-design/icons';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createMenu, updateMenu, deleteMenu, getMenuTree } from '@/api/system/menu';
 import type { Menu } from '@/types/api';
 import DynamicIcon from '@/components/DynamicIcon';
@@ -21,79 +21,91 @@ const Menus: React.FC = () => {
             key: 'id',
         },
         {
-            title: 'Icon',
+            title: '图标',
             dataIndex: 'icon',
             key: 'icon',
             render: (icon: string) => icon ? <DynamicIcon type={icon} /> : null,
         },
         {
-            title: 'Title',
+            title: '标题',
             dataIndex: 'title',
             key: 'title',
         },
         {
-            title: 'Name',
+            title: '名称',
             dataIndex: 'name',
             key: 'name',
         },
         {
-            title: 'Path',
+            title: '路径',
             dataIndex: 'path',
             key: 'path',
         },
         {
-            title: 'Sort',
+            title: '排序',
             dataIndex: 'sort',
             key: 'sort',
         },
         {
-            title: 'Type',
+            title: '类型',
             dataIndex: 'menu_type',
             key: 'menu_type',
             render: (type: number) => (
                 <Tag color={type === 1 ? 'processing' : type === 2 ? 'success' : 'warning'}>
-                    {type === 1 ? 'Directory' : type === 2 ? 'Menu' : 'Button'}
+                    {type === 1 ? '目录' : type === 2 ? '菜单' : '按钮'}
                 </Tag>
             ),
         },
         {
-            title: 'Status',
+            title: '状态',
             dataIndex: 'status',
             key: 'status',
             render: (status: number) => (
                 <Tag color={status === 1 ? 'success' : 'error'}>
-                    {status === 1 ? 'Active' : 'Inactive'}
+                    {status === 1 ? '激活' : '禁用'}
                 </Tag>
             ),
         },
         {
-            title: 'Actions',
+            title: '操作',
             key: 'actions',
             render: (_: React.ReactNode, record: Menu) => (
                 <Space size="small">
-                    <Button 
-                        type="link" 
-                        icon={<EditOutlined />} 
+                    <Button
+                        type="link"
+                        icon={<EditOutlined />}
                         size="small"
                         onClick={() => handleEdit(record)}
                     >
-                        Edit
+                        编辑
                     </Button>
-                    <Button 
-                        type="link" 
-                        danger 
-                        icon={<DeleteOutlined />} 
+                    <Button
+                        type="link"
+                        danger
+                        icon={<DeleteOutlined />}
                         size="small"
                         onClick={() => handleDelete(record.id)}
                     >
-                        Delete
+                        删除
                     </Button>
                 </Space>
             ),
         },
     ];
 
-    const fetchMenus = async () => {
+    // 递归获取所有菜单项的key
+    const getAllMenuKeys = React.useCallback((menuList: Menu[]): React.Key[] => {
+        let keys: React.Key[] = [];
+        menuList.forEach(menu => {
+            keys.push(menu.id);
+            if (menu.children && menu.children.length > 0) {
+                keys = keys.concat(getAllMenuKeys(menu.children));
+            }
+        });
+        return keys;
+    }, []);
+
+    const fetchMenus = React.useCallback(async () => {
         setLoading(true);
         try {
             const response = await getMenuTree();
@@ -107,19 +119,7 @@ const Menus: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    // 递归获取所有菜单项的key
-    const getAllMenuKeys = (menuList: Menu[]): React.Key[] => {
-        let keys: React.Key[] = [];
-        menuList.forEach(menu => {
-            keys.push(menu.id);
-            if (menu.children && menu.children.length > 0) {
-                keys = keys.concat(getAllMenuKeys(menu.children));
-            }
-        });
-        return keys;
-    };
+    }, [getAllMenuKeys]);
 
     useEffect(() => {
         fetchMenus();
@@ -173,7 +173,7 @@ const Menus: React.FC = () => {
     const handleModalOk = async () => {
         try {
             const values = await form.validateFields();
-            
+
             if (editingMenu) {
                 // 更新菜单
                 await updateMenu(editingMenu.id, values);
@@ -201,14 +201,15 @@ const Menus: React.FC = () => {
     return (
         <div>
             <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 8 }}>
+
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-                    Add Menu
+                    添加菜单
                 </Button>
-                <Button 
-                    icon={isAllExpanded ? <ShrinkOutlined /> : <ExpandOutlined />} 
+                <Button
+                    icon={isAllExpanded ? <ShrinkOutlined /> : <ExpandOutlined />}
                     onClick={toggleExpandAll}
                 >
-                    {isAllExpanded ? 'Collapse All' : 'Expand All'}
+                    {isAllExpanded ? '全部收起' : '全部展开'}
                 </Button>
             </div>
 
@@ -217,7 +218,7 @@ const Menus: React.FC = () => {
                 dataSource={menus}
                 loading={loading}
                 rowKey="id"
-                pagination={{ 
+                pagination={{
                     pageSize: 20,
                     showSizeChanger: true,
                     showQuickJumper: true,
@@ -235,7 +236,7 @@ const Menus: React.FC = () => {
             />
 
             <Modal
-                title={editingMenu ? "Edit Menu" : "Add Menu"}
+                title={editingMenu ? "编辑菜单" : "添加菜单"}
                 open={modalVisible}
                 onOk={handleModalOk}
                 onCancel={handleModalCancel}
@@ -244,34 +245,34 @@ const Menus: React.FC = () => {
                 <Form form={form} layout="vertical">
                     <Form.Item
                         name="title"
-                        label="Title"
-                        rules={[{ required: true, message: 'Please input title!' }]}
+                        label="标题"
+                        rules={[{ required: true, message: '请输入标题!' }]}
                     >
                         <Input />
                     </Form.Item>
                     <Form.Item
                         name="name"
-                        label="Name"
-                        rules={[{ required: true, message: 'Please input name!' }]}
+                        label="名称"
+                        rules={[{ required: true, message: '请输入名称!' }]}
                     >
                         <Input />
                     </Form.Item>
                     <Form.Item
                         name="path"
-                        label="Path"
-                        rules={[{ required: true, message: 'Please input path!' }]}
+                        label="路径"
+                        rules={[{ required: true, message: '请输入路径!' }]}
                     >
                         <Input />
                     </Form.Item>
-                    <Form.Item name="component" label="Component">
+                    <Form.Item name="component" label="组件">
                         <Input />
                     </Form.Item>
-                    <Form.Item name="icon" label="Icon">
+                    <Form.Item name="icon" label="图标">
                         <Input />
                     </Form.Item>
-                    <Form.Item name="parent_id" label="Parent Menu">
-                        <Select 
-                            placeholder="Select parent menu" 
+                    <Form.Item name="parent_id" label="父级菜单">
+                        <Select
+                            placeholder="请选择父级菜单"
                             allowClear
                             options={menus.map(menu => ({
                                 label: menu.title,
@@ -280,20 +281,20 @@ const Menus: React.FC = () => {
                         >
                         </Select>
                     </Form.Item>
-                    <Form.Item name="sort" label="Sort">
+                    <Form.Item name="sort" label="排序">
                         <InputNumber min={0} style={{ width: '100%' }} />
                     </Form.Item>
-                    <Form.Item name="menu_type" label="Menu Type" initialValue={1}>
+                    <Form.Item name="menu_type" label="菜单类型" initialValue={1}>
                         <Select>
-                            <Select.Option value={1}>Directory</Select.Option>
-                            <Select.Option value={2}>Menu</Select.Option>
-                            <Select.Option value={3}>Button</Select.Option>
+                            <Select.Option value={1}>目录</Select.Option>
+                            <Select.Option value={2}>菜单</Select.Option>
+                            <Select.Option value={3}>按钮</Select.Option>
                         </Select>
                     </Form.Item>
-                    <Form.Item name="status" label="Status" initialValue={1}>
+                    <Form.Item name="status" label="状态" initialValue={1}>
                         <Select>
-                            <Select.Option value={1}>Active</Select.Option>
-                            <Select.Option value={0}>Inactive</Select.Option>
+                            <Select.Option value={1}>激活</Select.Option>
+                            <Select.Option value={0}>禁用</Select.Option>
                         </Select>
                     </Form.Item>
                 </Form>
