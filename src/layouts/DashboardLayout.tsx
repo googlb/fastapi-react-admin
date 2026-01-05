@@ -5,7 +5,7 @@ import { HomeOutlined } from '@ant-design/icons';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import TabBar from '@/components/layout/TabBar';
-import { PageLoading } from '@/components/PageLoading'; // 确保导入了之前封装的 Loading 组件
+import { PageLoading } from '@/components/common/PageLoading.tsx'; // 确保导入了之前封装的 Loading 组件
 import { useSystemStore } from '@/store/systemStore';
 import { useAuthStore } from '@/store/authStore';
 import type { Menu } from '@/types/api';
