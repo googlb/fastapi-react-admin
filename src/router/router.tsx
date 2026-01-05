@@ -5,18 +5,14 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 
 import { useIsAuthenticated} from '@/store/authStore';
 import {PageLoading} from "@ant-design/pro-components";
+import DynamicRoute from "@/components/route/DynamicRoute.tsx";
 
 // 懒加载组件
 const Login = lazy(() => import('@/pages/Login'));
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
-const Users = lazy(() => import('@/pages/system/Users'));
-const Roles = lazy(() => import('@/pages/system/Roles'));
-const Menus = lazy(() => import('@/pages/system/Menus'));
 const Profile = lazy(() => import('@/pages/user/Profile'));
 const Settings = lazy(() => import('@/pages/user/Settings'));
 
-// 通用占位页面
-const PlaceholderPage = lazy(() => import('@/pages/PlaceholderPage'));
 
 
 
@@ -59,16 +55,7 @@ export const router = createBrowserRouter([
         <AuthLayout />
       </PublicRoute>
     ),
-    children: [
-      {
-        index: true,
-        element: (
-          <Suspense fallback={<PageLoading />}>
-            <Login />
-          </Suspense>
-        ),
-      },
-    ],
+    children: [{ index: true, element: <Suspense fallback={<PageLoading />}><Login /></Suspense> }],
   },
   {
     path: '/',
@@ -78,84 +65,15 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      {
-        index: true,
-        element: (
-            <Dashboard />
-        ),
-      },
-      // 系统管理
-      {
-        path: 'system/users',
-        element: (
-            <Users />
-        ),
-      },
-      {
-        path: 'system/roles',
-        element: (
-            <Roles />
-        ),
-      },
-      {
-        path: 'system/menus',
-        element: (
-            <Menus />
-        ),
-      },
-      {
-        path: 'system/:page',
-        element: (
-            <PlaceholderPage />
-        ),
-      },
-      // 内容管理
-      {
-        path: 'content/:page',
-        element: (
-            <PlaceholderPage />
-        ),
-      },
-      // 监控管理
-      {
-        path: 'monitor/:page',
-        element: (
-            <PlaceholderPage />
-        ),
-      },
-      // 工具管理
-      {
-        path: 'tools/:page',
-        element: (
-            <PlaceholderPage />
-        ),
-      },
-      // 用户中心
-      {
-        path: 'user/profile',
-        element: (
-            <Profile />
-        ),
-      },
-      {
-        path: 'user/settings',
-        element: (
-            <Settings />
-        ),
-      },
-      // 通配符路由 - 捕获所有其他路径
-      {
-        path: '*',
-        element: (
-            <PlaceholderPage />
-        ),
-      },
+      { index: true, element: <Suspense fallback={<PageLoading />}><Dashboard /></Suspense> },
+      // 个人中心等非菜单驱动页面可保留硬编码
+      { path: 'user/profile', element: <Suspense fallback={<PageLoading />}><Profile /></Suspense> },
+      { path: 'user/settings', element: <Suspense fallback={<PageLoading />}><Settings /></Suspense> },
+      // 所有菜单路径（包括 /system/users、/report/sales、/business/order 等）都走动态加载
+      { path: '*', element: <Suspense fallback={<PageLoading />}><DynamicRoute /></Suspense> },
     ],
   },
-  {
-    path: '*',
-    element: <Navigate to="/" replace />,
-  },
+  { path: '*', element: <Navigate to="/" replace /> },
 ]);
 
 // 导出 Router 组件
