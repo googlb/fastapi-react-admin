@@ -47,80 +47,191 @@ service.interceptors.request.use(
 );
 
 // --- 响应拦截 ---
+
 service.interceptors.response.use(
+
   (response: AxiosResponse) => {
-    // 强制类型转换，这里假设后端一定返回 ApiResponse 结构
+
     const res = response.data as ApiResponse;
 
-    // 1. 业务逻辑错误处理
     if (res.code !== SUCCESS_CODE) {
-      message.error(res.msg || '请求失败');
-      return Promise.reject(new Error(res.msg || 'Business Error'));
+
+      message.error(res.msg || 'Request Error');
+
+      return Promise.reject(new Error(res.msg || 'Error'));
+
     }
 
-    // 2.【核心优化】自动解包：直接返回 data 字段
-    // 这样前端组件调用时，拿到的就是干净的数据，不需要再 .data 了
     return res.data;
+
   },
+
   async (error: AxiosError) => {
+
     const originalRequest = error.config;
-    if (!originalRequest) return Promise.reject(error);
 
-    const status = error.response?.status;
 
-    // --- 401 自动刷新逻辑 ---
-    if (status === 401 && !originalRequest._retry) {
-      if (originalRequest.url?.includes('/auth/login')) {
+
+    // 如果请求配置不存在，或错误不是由 401 引起，则直接抛出错误
+
+    if (!originalRequest || error.response?.status !== 401) {
+
+      // 避免重复提示已处理的业务错误
+
+      if (error.message.includes('Business Error')) {
+
         return Promise.reject(error);
+
       }
 
-      if (isRefreshing) {
-        return new Promise((resolve) => {
-          requestQueue.push((token) => {
-            if (originalRequest.headers) originalRequest.headers.Authorization = `Bearer ${token}`;
-            resolve(service(originalRequest));
-          });
-        });
-      }
+      const msg = (error.response?.data as any)?.msg || error.message || '请求失败';
 
-      originalRequest._retry = true;
-      isRefreshing = true;
+      message.error(msg);
 
-      try {
-        const { refreshToken, setTokens } = useAuthStore.getState();
-        if (!refreshToken) throw new Error('No refresh token');
+      return Promise.reject(error);
 
-        // 【优化】使用 BASE_URL 变量拼接，不再硬编码
-        // 注意：这里必须用 axios.post 而不是 service.post，防止无限循环
-        const { data: refreshRes } = await axios.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
-            `${BASE_URL}/auth/refresh`,
-            { refreshToken }
-        );
-
-        if (refreshRes.code === SUCCESS_CODE) {
-            const newTokens = refreshRes.data;
-            setTokens(newTokens);
-            processQueue(null, newTokens.accessToken);
-
-            if (originalRequest.headers) originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
-            return service(originalRequest);
-        }
-      } catch (refreshError) {
-        processQueue(new Error('Refresh failed'), null);
-        useAuthStore.getState().logout();
-        message.warning('登录已过期');
-        router.navigate('/login', { replace: true });
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
     }
 
-    // --- 通用错误处理 ---
-    const msg = (error.response?.data as any)?.msg || error.message || '请求失败';
-    message.error(msg);
-    return Promise.reject(error);
+    
+
+    // 对于登录请求的401错误，不进行刷新，直接抛出
+
+    if (originalRequest.url?.includes('/auth/login')) {
+
+      return Promise.reject(error);
+
+    }
+
+    
+
+    // 如果正在刷新token，则将当前请求加入队列
+
+    if (isRefreshing) {
+
+      return new Promise((resolve) => {
+
+        requestQueue.push((token) => {
+
+          if (originalRequest.headers) {
+
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+
+          }
+
+          resolve(service(originalRequest));
+
+        });
+
+      });
+
+    }
+
+
+
+    // 设置刷新状态锁，并标记当前请求已重试
+
+    isRefreshing = true;
+
+    originalRequest._retry = true;
+
+
+
+    const { refreshToken, logout } = useAuthStore.getState();
+
+
+
+    // 如果没有刷新令牌，直接登出
+
+    if (!refreshToken) {
+
+      logout();
+
+      router.navigate('/login', { replace: true });
+
+      isRefreshing = false;
+
+      message.warning('登录已过期，请重新登录');
+
+      return Promise.reject(new Error('No refresh token available.'));
+
+    }
+
+
+
+    try {
+
+      // 发送刷新请求
+
+      const { data: refreshRes } = await axios.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
+
+        `${BASE_URL}/auth/refresh`,
+
+        { refreshToken },
+
+      );
+
+
+
+      // 刷新成功
+
+      if (refreshRes.code === SUCCESS_CODE) {
+
+        const newTokens = refreshRes.data;
+
+        useAuthStore.getState().setTokens(newTokens);
+
+        
+
+        // 使用新令牌重试原始请求
+
+        if (originalRequest.headers) {
+
+          originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
+
+        }
+
+
+
+        // 重新执行队列中的所有请求
+
+        processQueue(null, newTokens.accessToken);
+
+
+
+        return service(originalRequest);
+
+      } else {
+
+        // 刷新被后端拒绝（例如 refresh_token 也过期了）
+
+        throw new Error(refreshRes.msg || 'Session expired');
+
+      }
+
+    } catch (refreshError) {
+
+      // 刷新过程中发生任何错误，都执行登出
+
+      processQueue(refreshError as Error, null); // 通知队列中的所有请求刷新失败
+
+      logout();
+
+      router.navigate('/login', { replace: true });
+
+      message.warning('登录已过期，请重新登录');
+
+      return Promise.reject(refreshError);
+
+    } finally {
+
+      // 释放刷新锁
+
+      isRefreshing = false;
+
+    }
+
   }
+
 );
 
 // --- 3.【核心优化】类型友好的请求方法 ---
