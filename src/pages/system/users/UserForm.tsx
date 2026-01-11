@@ -1,12 +1,13 @@
 import { Form, Input, Select, Modal, Switch } from 'antd';
 import type { User } from '@/types/api';
+import React from 'react';
 
 
 
 interface UserFormProps {
   open: boolean;
   onCancel: () => void;
-  onSubmit: (values: Partial<User>) => void;
+  onSubmit: (values: Partial<User>) => Promise<boolean>;
   loading: boolean;
   user?: User | null;
   roles: { id: number; name: string }[];
@@ -18,31 +19,43 @@ const UserForm: React.FC<UserFormProps> = ({ open, onCancel, onSubmit, loading, 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      onSubmit(values);
+      await onSubmit(values);
     } catch (error) {
-      console.error('Form validation failed:', error);
+      console.error('Form validation failed or submission failed:', error);
     }
   };
+
+  React.useEffect(() => {
+    if (open) {
+      form.resetFields();
+      if (user) {
+        form.setFieldsValue(user);
+      } else {
+        form.setFieldsValue({
+            is_active: true,
+            is_superuser: false,
+        })
+      }
+    }
+  }, [open, user, form]);
 
   return (
     <Modal
       title={user ? "编辑用户" : "添加用户"}
       open={open}
       onOk={handleSubmit}
-      onCancel={() => {
-        onCancel();
-        form.resetFields();
-      }}
+      onCancel={onCancel}
       confirmLoading={loading}
       width={600}
+      destroyOnClose
     >
-      <Form form={form} layout="vertical" initialValues={user || undefined}>
+      <Form form={form} layout="vertical">
         <Form.Item
           name="username"
           label="用户名"
           rules={[{ required: true, message: '请输入用户名!' }]}
         >
-          <Input />
+          <Input disabled={!!user} />
         </Form.Item>
         <Form.Item
           name="email"
@@ -79,9 +92,9 @@ const UserForm: React.FC<UserFormProps> = ({ open, onCancel, onSubmit, loading, 
           name="role_ids"
           label="角色"
         >
-          <Select 
+          <Select
             mode="multiple"
-            placeholder="请选择角色" 
+            placeholder="请选择角色"
             allowClear
             options={roles.map(role => ({
               label: role.name,
@@ -94,7 +107,6 @@ const UserForm: React.FC<UserFormProps> = ({ open, onCancel, onSubmit, loading, 
           name="is_active"
           label="激活状态"
           valuePropName="checked"
-          initialValue={true}
         >
           <Switch />
         </Form.Item>
@@ -102,7 +114,6 @@ const UserForm: React.FC<UserFormProps> = ({ open, onCancel, onSubmit, loading, 
           name="is_superuser"
           label="超级用户"
           valuePropName="checked"
-          initialValue={false}
         >
           <Switch />
         </Form.Item>
