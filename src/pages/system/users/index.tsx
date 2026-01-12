@@ -167,11 +167,12 @@ const Users: React.FC = () => {
                     pageSize: 20,
                     showSizeChanger: true,
                 }}
-                toolBarRender={() => [
+                headerTitle={
                     <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
                         添加用户
-                    </Button>,
-                ]}
+                    </Button>
+                }
+                toolBarRender={() => []}
                 search={{
                     layout: 'horizontal',
                     labelWidth: 'auto',
