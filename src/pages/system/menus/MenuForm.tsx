@@ -1,5 +1,8 @@
-import { Form, Input, InputNumber, Select, Modal } from 'antd';
+import { Form, Input, InputNumber, Select, Modal, Popover } from 'antd';
 import type { Menu } from '@/types/api';
+import React, { useState } from 'react';
+import IconSelector from '@/components/IconSelector';
+import DynamicIcon from '@/components/DynamicIcon';
 
 const { Option } = Select;
 
@@ -14,6 +17,9 @@ interface MenuFormProps {
 
 const MenuForm: React.FC<MenuFormProps> = ({ open, onCancel, onSubmit, loading, menu, menus }) => {
   const [form] = Form.useForm();
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+
+  const iconValue = Form.useWatch('icon', form);
 
   const handleSubmit = async () => {
     try {
@@ -22,6 +28,11 @@ const MenuForm: React.FC<MenuFormProps> = ({ open, onCancel, onSubmit, loading, 
     } catch (error) {
       console.error('Form validation failed:', error);
     }
+  };
+
+  const handleIconSelect = (iconName: string) => {
+    form.setFieldsValue({ icon: iconName });
+    setIconPickerOpen(false);
   };
 
   return (
@@ -35,8 +46,10 @@ const MenuForm: React.FC<MenuFormProps> = ({ open, onCancel, onSubmit, loading, 
       }}
       confirmLoading={loading}
       width={600}
+      // Antd Modal默认会销毁子元素，导致form状态丢失，这里设置不销毁
+      destroyOnClose={false}
     >
-      <Form form={form} layout="vertical" initialValues={menu}>
+      <Form form={form} layout="vertical" initialValues={menu || { menu_type: 1, status: 1, sort: 0 }}>
         <Form.Item
           name="title"
           label="标题"
@@ -62,30 +75,42 @@ const MenuForm: React.FC<MenuFormProps> = ({ open, onCancel, onSubmit, loading, 
           <Input />
         </Form.Item>
         <Form.Item name="icon" label="图标">
-          <Input />
+          <Popover
+            content={<IconSelector onSelect={handleIconSelect} />}
+            trigger="click"
+            open={iconPickerOpen}
+            onOpenChange={setIconPickerOpen}
+            placement="bottomLeft"
+          >
+            <Input
+              placeholder="点击选择图标"
+              readOnly
+              value={iconValue}
+              prefix={iconValue && <DynamicIcon type={iconValue} className="mr-2" />}
+            />
+          </Popover>
         </Form.Item>
         <Form.Item name="parent_id" label="父级菜单">
-          <Select 
-            placeholder="请选择父级菜单" 
+          <Select
+            placeholder="请选择父级菜单"
             allowClear
-            options={menus.map(menu => ({
-              label: menu.title,
-              value: menu.id,
+            options={menus.map(m => ({
+              label: m.title,
+              value: m.id,
             }))}
-          >
-          </Select>
+          />
         </Form.Item>
         <Form.Item name="sort" label="排序">
           <InputNumber min={0} style={{ width: '100%' }} />
         </Form.Item>
-        <Form.Item name="menu_type" label="菜单类型" initialValue={1}>
+        <Form.Item name="menu_type" label="菜单类型">
           <Select>
             <Option value={1}>目录</Option>
             <Option value={2}>菜单</Option>
             <Option value={3}>按钮</Option>
           </Select>
         </Form.Item>
-        <Form.Item name="status" label="状态" initialValue={1}>
+        <Form.Item name="status" label="状态">
           <Select>
             <Option value={1}>激活</Option>
             <Option value={0}>禁用</Option>
